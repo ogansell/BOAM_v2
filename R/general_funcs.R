@@ -8,14 +8,14 @@ show_startup_modal <- function() {
 
       <p>This net gain model evaluates offset proposals for ecological equivalence and net gain across biodiversity type, amount, and time, based on user inputs, and can be used to simulate numerous biodiversity offset scenarios to compare predicted outcomes.</p>
 
-      <p>The model uses Net Present Biodiversity Value (NPBV) to indicate predicted outcomes from offset proposals, coupled with confidence levels to describe certainty associated with the model outputs.</p>
+      <p>The model uses Net Present Biodiversity Value (NPBV) to indicate predicted outcomes from offset proposals, coupled with prediction intervals to describe certainty associated with the model outputs.</p>
 
       <p>The NPBV does not quantify predicted net gain outcomes. Outputs from this model should be further interpreted to meaningful ecological 'on-the-ground' measures to support quantified (e.g., 10%) net gain claims.</p>
 
       <ul>
         <li>Enter ecological data for impact and offset sites</li>
         <li>Enter proposed offset measures and predicted outcome values</li>
-        <li>Run simulations with confidence levels</li>
+        <li>Run simulations with prediction intervals to describe certainty</li>
         <li>Save and export model output summaries</li>
       </ul>
 
@@ -326,247 +326,137 @@ edit_saved_row <- function(row, session, numeric_ids, saved_results,
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Excel Upload / Template Functions
+# Excel Upload Functions (multi-sheet with join)
 # ══════════════════════════════════════════════════════════════════════════════
 
-# ── Human-readable column labels for the Attributes sheet ────────────────────
-# Maps internal field IDs to user-friendly headers. Order here determines
-# column order in the template.
-xlsx_attribute_columns <- function() {
+# ── Column label-to-ID mappings for each sheet ───────────────────────────────
+
+xlsx_impact_columns <- function() {
   c(
-    # Biodiversity identity
-    "biodiversity_type"          = "Biodiversity Type",
-    "biodiversity_component"     = "Biodiversity Component",
-    "biodiversity_attribute"     = "Biodiversity Attribute",
-    "measurement_unit"           = "Measurement Unit",
-    "benchmark_value"            = "Benchmark Value",
-    "distribution"               = "Statistical Distribution",
-
-    # Impact Area
-    "impact_area"                = "Impact Area",
-    "impact_area_unit"           = "Impact Area Unit",
-    "impact_area_data_type"      = "Impact Area Data Type",
-    "impact_area_empirical_details"  = "Impact Area Empirical Details",
-    "impact_area_modelled_details"   = "Impact Area Modelled Details",
-    "impact_area_expert_details"     = "Impact Area Expert Details",
-    "impact_area_proxy_details"      = "Impact Area Proxy Details",
-
-    # Prior Impact
-    "prior_impact_data_type"     = "Prior Impact Data Type",
-    "mx_prior_impact_mean"       = "Prior Impact Mean",
-    "mx_prior_impact_sd"         = "Prior Impact SD",
-    "impact_sample_size_prior"   = "Prior Impact Sample Size (Poisson)",
-    "mx_prior_impact_var"        = "Prior Impact Variance (Neg Binom)",
-    "prior_impact_empirical_details"     = "Prior Impact Empirical Details",
-    "prior_impact_modelled_details"      = "Prior Impact Modelled Details",
-    "prior_impact_expert_affiliations"   = "Prior Impact Expert Affiliations",
-    "prior_impact_proxy_details"         = "Prior Impact Proxy Details",
-    "prior_impact_p_low"         = "Prior Impact SHELF Lower Bound",
-    "prior_impact_p50"           = "Prior Impact SHELF Median",
-    "prior_impact_p_high"        = "Prior Impact SHELF Upper Bound",
-    "prior_impact_ci_level"      = "Prior Impact SHELF CI Level",
-
-    # Post Impact
-    "post_impact_data_type"      = "Post Impact Data Type",
-    "mx_post_impact_mean"        = "Post Impact Mean",
-    "mx_post_impact_sd"          = "Post Impact SD",
-    "impact_sample_size_post"    = "Post Impact Sample Size (Poisson)",
-    "mx_post_impact_var"         = "Post Impact Variance (Neg Binom)",
-    "post_impact_empirical_details"      = "Post Impact Empirical Details",
-    "post_impact_modelled_details"       = "Post Impact Modelled Details",
-    "post_impact_expert_affiliations"    = "Post Impact Expert Affiliations",
-    "post_impact_proxy_details"          = "Post Impact Proxy Details",
-    "post_impact_p_low"          = "Post Impact SHELF Lower Bound",
-    "post_impact_p50"            = "Post Impact SHELF Median",
-    "post_impact_p_high"         = "Post Impact SHELF Upper Bound",
-    "post_impact_ci_level"       = "Post Impact SHELF CI Level",
-
-    # Offset Area
-    "offset_area"                = "Offset Area",
-    "offset_area_unit"           = "Offset Area Unit",
-
-    # Prior Offset
-    "prior_offset_data_type"     = "Prior Offset Data Type",
-    "mx_prior_offset_mean"       = "Prior Offset Mean",
-    "mx_prior_offset_sd"         = "Prior Offset SD",
-    "offset_sample_size_prior"   = "Prior Offset Sample Size (Poisson)",
-    "mx_prior_offset_var"        = "Prior Offset Variance (Neg Binom)",
-    "prior_offset_empirical_details"     = "Prior Offset Empirical Details",
-    "prior_offset_modelled_details"      = "Prior Offset Modelled Details",
-    "prior_offset_expert_affiliations"   = "Prior Offset Expert Affiliations",
-    "prior_offset_proxy_details"         = "Prior Offset Proxy Details",
-    "prior_offset_p_low"         = "Prior Offset SHELF Lower Bound",
-    "prior_offset_p50"           = "Prior Offset SHELF Median",
-    "prior_offset_p_high"        = "Prior Offset SHELF Upper Bound",
-    "prior_offset_ci_level"      = "Prior Offset SHELF CI Level",
-
-    # Post Offset
-    "post_offset_data_type"      = "Post Offset Data Type",
-    "mx_post_offset_mean"        = "Post Offset Mean",
-    "mx_post_offset_sd"          = "Post Offset SD",
-    "offset_sample_size_post"    = "Post Offset Sample Size (Poisson)",
-    "mx_post_offset_var"         = "Post Offset Variance (Neg Binom)",
-    "post_offset_empirical_details"      = "Post Offset Empirical Details",
-    "post_offset_modelled_details"       = "Post Offset Modelled Details",
-    "post_offset_expert_affiliations"    = "Post Offset Expert Affiliations",
-    "post_offset_proxy_details"          = "Post Offset Proxy Details",
-    "post_offset_p_low"          = "Post Offset SHELF Lower Bound",
-    "post_offset_p50"            = "Post Offset SHELF Median",
-    "post_offset_p_high"         = "Post Offset SHELF Upper Bound",
-    "post_offset_ci_level"       = "Post Offset SHELF CI Level",
-
-    # Offset confidence / time / discount
-    "selected_confidence"        = "Confidence in Offset Action",
-    "offset_confidence_justify"  = "Justify Confidence",
-    "time_till_end"              = "Time Till End (Years)",
-    "offset_time_till_end_justify" = "Justify Time Till End",
-    "discount_rate"              = "Discount Rate (%)",
-    "offset_discount_rate_justify" = "Justify Discount Rate"
+    "biodiversity_type"        = "Biodiversity Type",
+    "biodiversity_component"   = "Biodiversity Component",
+    "biodiversity_attribute"   = "Biodiversity Attribute",
+    "measurement_unit"         = "Measurement Unit",
+    "benchmark_value"          = "Benchmark Value",
+    "distribution"             = "Statistical Distribution",
+    "impact_area"              = "Impact Area",
+    "impact_area_unit"         = "Impact Area Unit",
+    "prior_impact_data_type"   = "Prior Impact Data Type",
+    "mx_prior_impact_mean"     = "Prior Impact Mean",
+    "mx_prior_impact_sd"       = "Prior Impact SD",
+    "impact_sample_size_prior" = "Prior Impact Sample Size (Poisson)",
+    "mx_prior_impact_var"      = "Prior Impact Variance (Neg Binom)",
+    "post_impact_data_type"    = "Post Impact Data Type",
+    "mx_post_impact_mean"      = "Post Impact Mean",
+    "mx_post_impact_sd"        = "Post Impact SD",
+    "impact_sample_size_post"  = "Post Impact Sample Size (Poisson)",
+    "mx_post_impact_var"       = "Post Impact Variance (Neg Binom)"
   )
 }
 
-# ── Generate the Excel template workbook ─────────────────────────────────────
-generate_xlsx_template <- function(file) {
-  require(openxlsx)
-
-  wb <- createWorkbook()
-
-  # --- Sheet 1: Project Details ---
-  addWorksheet(wb, "Project Details")
-  proj_headers <- c("Project Name", "Prepared By", "Date (dd-mm-yyyy)",
-                     "Proposal Overview", "Ecological Context",
-                     "Biodiversity Impacts", "Offset Package")
-  proj_ids     <- c("project_name", "prepared_by", "date",
-                     "proposal_overview", "ecological_context",
-                     "biodiversity_impacts", "offset_package")
-
-  writeData(wb, "Project Details", data.frame(Field = proj_headers, Value = ""),
-            startRow = 1, startCol = 1)
-
-  # Style the header row
-  header_style <- createStyle(textDecoration = "bold", fgFill = "#D5E8D4", border = "Bottom")
-  addStyle(wb, "Project Details", header_style, rows = 1, cols = 1:2)
-  setColWidths(wb, "Project Details", cols = 1, widths = 30)
-  setColWidths(wb, "Project Details", cols = 2, widths = 80)
-
-  # --- Sheet 2: Attributes ---
-  addWorksheet(wb, "Attributes")
-  attr_cols <- xlsx_attribute_columns()
-  attr_labels <- unname(attr_cols)
-
-  # Write header row with human-readable labels
-  header_df <- as.data.frame(matrix(nrow = 0, ncol = length(attr_labels)))
-  colnames(header_df) <- attr_labels
-  writeData(wb, "Attributes", header_df, startRow = 1)
-
-  # Style header
-  attr_header_style <- createStyle(textDecoration = "bold", fgFill = "#D5E8D4",
-                                    border = "Bottom", wrapText = TRUE)
-  addStyle(wb, "Attributes", attr_header_style,
-           rows = 1, cols = seq_along(attr_labels), gridExpand = TRUE)
-  setColWidths(wb, "Attributes", cols = seq_along(attr_labels), widths = 22)
-
-  # Add data validation for dropdown fields
-  # Distribution
-  dist_col <- which(attr_labels == "Statistical Distribution")
-  dataValidation(wb, "Attributes", col = dist_col, rows = 2:100,
-                 type = "list", value = '"Normal,Poisson,Negative Binomial"')
-
-  # Data type columns
-  data_type_labels <- c("Impact Area Data Type", "Prior Impact Data Type",
-                         "Post Impact Data Type", "Prior Offset Data Type",
-                         "Post Offset Data Type")
-  for (lbl in data_type_labels) {
-    dt_col <- which(attr_labels == lbl)
-    if (length(dt_col) == 1) {
-      dataValidation(wb, "Attributes", col = dt_col, rows = 2:100,
-                     type = "list",
-                     value = '"Empirical,Modelled,Expert elicited,Proxy value"')
-    }
-  }
-
-  # Confidence
-  conf_col <- which(attr_labels == "Confidence in Offset Action")
-  dataValidation(wb, "Attributes", col = conf_col, rows = 2:100,
-                 type = "list",
-                 value = '"Low confidence >50% <75%,Confident 75-90%,Very confident >90%"')
-
-  # Area unit columns
-  area_unit_labels <- c("Impact Area Unit", "Offset Area Unit")
-  for (lbl in area_unit_labels) {
-    au_col <- which(attr_labels == lbl)
-    if (length(au_col) == 1) {
-      dataValidation(wb, "Attributes", col = au_col, rows = 2:100,
-                     type = "list", value = '"km,m,ha,m\u00B2"')
-    }
-  }
-
-  # SHELF CI level columns
-  ci_labels <- c("Prior Impact SHELF CI Level", "Post Impact SHELF CI Level",
-                  "Prior Offset SHELF CI Level", "Post Offset SHELF CI Level")
-  for (lbl in ci_labels) {
-    ci_col <- which(attr_labels == lbl)
-    if (length(ci_col) == 1) {
-      dataValidation(wb, "Attributes", col = ci_col, rows = 2:100,
-                     type = "list", value = '"0.90,0.80,0.50"')
-    }
-  }
-
-  # --- Sheet 3: Instructions ---
-  addWorksheet(wb, "Instructions")
-  instructions <- data.frame(
-    Instruction = c(
-      "1. Fill in the 'Project Details' sheet with project-level information.",
-      "2. Fill in the 'Attributes' sheet with one row per biodiversity attribute.",
-      "3. Each row must have: Biodiversity Type, Component, Attribute, Measurement Unit, Benchmark Value, Distribution.",
-      "4. Each row must have impact and offset measurement data appropriate to the chosen distribution.",
-      "5. For Normal distribution: provide Mean and SD for each measurement point.",
-      "6. For Poisson distribution: provide Mean and Sample Size for each measurement point.",
-      "7. For Negative Binomial distribution: provide Mean and Variance for each measurement point.",
-      "8. For Expert elicited data type: provide SHELF Lower Bound, Median, Upper Bound, and CI Level.",
-      "9. Dropdown validation is provided for Distribution, Data Type, Confidence, Area Unit, and SHELF CI Level.",
-      "10. Leave distribution-specific fields blank if not applicable (e.g. leave Poisson Sample Size blank if using Normal).",
-      "11. Upload the completed file using the 'Upload Data' button on the Project Calculations tab."
-    ),
-    stringsAsFactors = FALSE
+xlsx_offset_columns <- function() {
+  c(
+    "biodiversity_type"        = "Biodiversity Type",
+    "biodiversity_component"   = "Biodiversity Component",
+    "biodiversity_attribute"   = "Biodiversity Attribute",
+    "offset_area"              = "Offset Area",
+    "offset_area_unit"         = "Offset Area Unit",
+    "prior_offset_data_type"   = "Prior Offset Data Type",
+    "mx_prior_offset_mean"     = "Prior Offset Mean",
+    "mx_prior_offset_sd"       = "Prior Offset SD",
+    "offset_sample_size_prior" = "Prior Offset Sample Size (Poisson)",
+    "mx_prior_offset_var"      = "Prior Offset Variance (Neg Binom)",
+    "post_offset_data_type"    = "Post Offset Data Type",
+    "mx_post_offset_mean"      = "Post Offset Mean",
+    "mx_post_offset_sd"        = "Post Offset SD",
+    "offset_sample_size_post"  = "Post Offset Sample Size (Poisson)",
+    "mx_post_offset_var"       = "Post Offset Variance (Neg Binom)",
+    "selected_confidence"      = "Confidence in Offset Action",
+    "time_till_end"            = "Time Till End (Years)",
+    "discount_rate"            = "Discount Rate (%)"
   )
-  writeData(wb, "Instructions", instructions)
-  setColWidths(wb, "Instructions", cols = 1, widths = 100)
-
-  saveWorkbook(wb, file, overwrite = TRUE)
 }
 
+xlsx_doc_columns <- function() {
+  c(
+    "biodiversity_type"                = "Biodiversity Type",
+    "biodiversity_component"           = "Biodiversity Component",
+    "biodiversity_attribute"           = "Biodiversity Attribute",
+    "impact_area_data_type"            = "Impact Area Data Type",
+    "impact_area_empirical_details"    = "Impact Area Empirical Details",
+    "impact_area_modelled_details"     = "Impact Area Modelled Details",
+    "impact_area_expert_details"       = "Impact Area Expert Details",
+    "impact_area_proxy_details"        = "Impact Area Proxy Details",
+    "prior_impact_empirical_details"   = "Prior Impact Empirical Details",
+    "prior_impact_modelled_details"    = "Prior Impact Modelled Details",
+    "prior_impact_expert_affiliations" = "Prior Impact Expert Affiliations",
+    "prior_impact_proxy_details"       = "Prior Impact Proxy Details",
+    "post_impact_empirical_details"    = "Post Impact Empirical Details",
+    "post_impact_modelled_details"     = "Post Impact Modelled Details",
+    "post_impact_expert_affiliations"  = "Post Impact Expert Affiliations",
+    "post_impact_proxy_details"        = "Post Impact Proxy Details",
+    "prior_offset_empirical_details"   = "Prior Offset Empirical Details",
+    "prior_offset_modelled_details"    = "Prior Offset Modelled Details",
+    "prior_offset_expert_affiliations" = "Prior Offset Expert Affiliations",
+    "prior_offset_proxy_details"       = "Prior Offset Proxy Details",
+    "post_offset_empirical_details"    = "Post Offset Empirical Details",
+    "post_offset_modelled_details"     = "Post Offset Modelled Details",
+    "post_offset_expert_affiliations"  = "Post Offset Expert Affiliations",
+    "post_offset_proxy_details"        = "Post Offset Proxy Details",
+    "offset_confidence_justify"        = "Justify Confidence",
+    "offset_time_till_end_justify"     = "Justify Time Till End",
+    "offset_discount_rate_justify"     = "Justify Discount Rate"
+  )
+}
 
-# ── Validate an uploaded Excel file ──────────────────────────────────────────
+# ── Helper: rename columns from human labels to internal IDs ─────────────────
+rename_to_ids <- function(df, col_map) {
+  label_to_id <- setNames(names(col_map), unname(col_map))
+  incoming <- colnames(df)
+  for (j in seq_along(incoming)) {
+    if (incoming[j] %in% names(label_to_id)) {
+      incoming[j] <- label_to_id[[incoming[j]]]
+    }
+  }
+  colnames(df) <- incoming
+  df
+}
+
+# Join key columns used across all sheets
+join_keys <- c("biodiversity_type", "biodiversity_component", "biodiversity_attribute")
+
+# ── Validate an uploaded multi-sheet Excel file ──────────────────────────────
 # Returns a list with:
-#   $valid    — logical, TRUE if all rows pass
-#   $errors   — data.frame with columns: Row, Field, Message
-#   $project  — named list of project detail values
-#   $attributes — data.frame with internal column names, ready for simulation
+#   $valid      — logical
+#   $errors     — data.frame(Row, Sheet, Field, Message)
+#   $project    — named list of project detail values
+#   $attributes — joined data.frame with internal column names, ready for simulation
 validate_xlsx_upload <- function(filepath) {
   require(openxlsx)
 
-  errors <- data.frame(Row = integer(), Field = character(),
+  errors <- data.frame(Row = integer(), Sheet = character(), Field = character(),
                         Message = character(), stringsAsFactors = FALSE)
 
+  add_err <- function(row, sheet, field, msg) {
+    errors <<- rbind(errors, data.frame(Row = row, Sheet = sheet, Field = field,
+                                         Message = msg, stringsAsFactors = FALSE))
+  }
+
   # --- Read Project Details ---
-  proj_sheet <- tryCatch(read.xlsx(filepath, sheet = "Project Details",
-                                    colNames = TRUE),
+  proj_sheet <- tryCatch(read.xlsx(filepath, sheet = "Project Details", colNames = TRUE),
                           error = function(e) NULL)
   if (is.null(proj_sheet)) {
-    errors <- rbind(errors, data.frame(Row = NA, Field = "Sheet",
-                                        Message = "Missing 'Project Details' sheet"))
+    add_err(NA, "Project Details", "Sheet", "Missing 'Project Details' sheet")
   }
 
   project <- list()
   if (!is.null(proj_sheet) && nrow(proj_sheet) >= 1) {
-    proj_ids <- c("project_name", "prepared_by", "date",
-                   "proposal_overview", "ecological_context",
-                   "biodiversity_impacts", "offset_package")
+    proj_ids    <- c("project_name", "prepared_by", "date",
+                      "proposal_overview", "ecological_context",
+                      "biodiversity_impacts", "offset_package")
     proj_labels <- c("Project Name", "Prepared By", "Date (dd-mm-yyyy)",
                       "Proposal Overview", "Ecological Context",
                       "Biodiversity Impacts", "Offset Package")
-
     for (i in seq_along(proj_labels)) {
       match_row <- which(proj_sheet[[1]] == proj_labels[i])
       if (length(match_row) == 1 && ncol(proj_sheet) >= 2) {
@@ -577,174 +467,272 @@ validate_xlsx_upload <- function(filepath) {
     }
   }
 
-  # --- Read Attributes ---
-  attr_sheet <- tryCatch(read.xlsx(filepath, sheet = "Attributes",
-                                    colNames = TRUE),
-                          error = function(e) NULL)
-  if (is.null(attr_sheet)) {
-    errors <- rbind(errors, data.frame(Row = NA, Field = "Sheet",
-                                        Message = "Missing 'Attributes' sheet"))
-    return(list(valid = FALSE, errors = errors, project = project,
-                attributes = data.frame()))
+  # --- Read Impact Attributes ---
+  impact_df <- tryCatch(read.xlsx(filepath, sheet = "Impact Attributes", colNames = TRUE),
+                         error = function(e) NULL)
+  if (is.null(impact_df)) {
+    add_err(NA, "Impact Attributes", "Sheet", "Missing 'Impact Attributes' sheet")
+    return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
+  }
+  if (nrow(impact_df) == 0) {
+    add_err(NA, "Impact Attributes", "Sheet", "No data rows")
+    return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
+  }
+  impact_df <- rename_to_ids(impact_df, xlsx_impact_columns())
+
+  # --- Read Offset Attributes ---
+  offset_df <- tryCatch(read.xlsx(filepath, sheet = "Offset Attributes", colNames = TRUE),
+                         error = function(e) NULL)
+  if (is.null(offset_df)) {
+    add_err(NA, "Offset Attributes", "Sheet", "Missing 'Offset Attributes' sheet")
+    return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
+  }
+  if (nrow(offset_df) == 0) {
+    add_err(NA, "Offset Attributes", "Sheet", "No data rows")
+    return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
+  }
+  offset_df <- rename_to_ids(offset_df, xlsx_offset_columns())
+
+  # --- Read Documentation (optional) ---
+  doc_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation", colNames = TRUE),
+                      error = function(e) NULL)
+  if (!is.null(doc_df) && nrow(doc_df) > 0) {
+    doc_df <- rename_to_ids(doc_df, xlsx_doc_columns())
+  } else {
+    doc_df <- NULL
   }
 
-  if (nrow(attr_sheet) == 0) {
-    errors <- rbind(errors, data.frame(Row = NA, Field = "Sheet",
-                                        Message = "'Attributes' sheet has no data rows"))
-    return(list(valid = FALSE, errors = errors, project = project,
-                attributes = data.frame()))
-  }
-
-  # Map human-readable column names back to internal IDs
-  attr_col_map <- xlsx_attribute_columns()
-  label_to_id <- setNames(names(attr_col_map), unname(attr_col_map))
-
-  # Rename columns from labels to IDs
-  incoming_names <- colnames(attr_sheet)
-  mapped_names <- character(length(incoming_names))
-  for (j in seq_along(incoming_names)) {
-    if (incoming_names[j] %in% names(label_to_id)) {
-      mapped_names[j] <- label_to_id[[incoming_names[j]]]
-    } else {
-      mapped_names[j] <- incoming_names[j]  # keep as-is if unrecognised
-    }
-  }
-  colnames(attr_sheet) <- mapped_names
-
-  # --- Validate each row ---
-  required_always <- c("biodiversity_type", "biodiversity_component",
+  # --- Validate Impact rows ---
+  impact_required <- c("biodiversity_type", "biodiversity_component",
                         "biodiversity_attribute", "measurement_unit",
                         "benchmark_value", "distribution",
-                        "impact_area", "offset_area",
-                        "selected_confidence", "time_till_end", "discount_rate")
+                        "impact_area", "impact_area_unit")
 
-  for (i in seq_len(nrow(attr_sheet))) {
-    row <- attr_sheet[i, , drop = FALSE]
+  for (i in seq_len(nrow(impact_df))) {
+    row <- impact_df[i, , drop = FALSE]
 
-    # Check always-required fields
-    for (fld in required_always) {
+    # Required fields
+    for (fld in impact_required) {
       val <- row[[fld]]
       if (is.null(val) || is.na(val) || trimws(as.character(val)) == "") {
-        errors <- rbind(errors, data.frame(
-          Row = i, Field = fld,
-          Message = paste0("Required field '", fld, "' is missing")))
+        add_err(i, "Impact", fld, paste0("Required field '", fld, "' is missing"))
       }
     }
 
-    # Check numeric fields are numeric
-    numeric_always <- c("benchmark_value", "impact_area", "offset_area",
-                         "time_till_end", "discount_rate")
-    for (fld in numeric_always) {
+    # Numeric checks
+    for (fld in c("benchmark_value", "impact_area")) {
       val <- row[[fld]]
       if (!is.null(val) && !is.na(val) && is.na(suppressWarnings(as.numeric(val)))) {
-        errors <- rbind(errors, data.frame(
-          Row = i, Field = fld,
-          Message = paste0("'", fld, "' must be a number")))
+        add_err(i, "Impact", fld, paste0("'", fld, "' must be a number"))
       }
     }
 
     # Distribution validation
     dist <- as.character(row$distribution)
     if (!is.na(dist) && !(dist %in% c("Normal", "Poisson", "Negative Binomial"))) {
-      errors <- rbind(errors, data.frame(
-        Row = i, Field = "distribution",
-        Message = paste0("Invalid distribution: '", dist, "'")))
+      add_err(i, "Impact", "distribution", paste0("Invalid distribution: '", dist, "'"))
     }
 
-    # Validate measurement points based on distribution and data type
+    # Reject Expert elicited
+    for (dt_fld in c("prior_impact_data_type", "post_impact_data_type")) {
+      dt_val <- as.character(row[[dt_fld]])
+      if (!is.na(dt_val) && dt_val == "Expert elicited") {
+        add_err(i, "Impact", dt_fld,
+                "Expert elicited data type is not supported via spreadsheet. Use the app GUI.")
+      }
+    }
+
+    # Measurement point validation (prior + post impact)
     point_configs <- list(
-      list(prefix = "prior_impact", dt_field = "prior_impact_data_type",
-           mean_field = "mx_prior_impact_mean", sd_field = "mx_prior_impact_sd",
-           n_field = "impact_sample_size_prior", var_field = "mx_prior_impact_var",
-           shelf_fields = c("prior_impact_p_low", "prior_impact_p50", "prior_impact_p_high")),
-      list(prefix = "post_impact", dt_field = "post_impact_data_type",
-           mean_field = "mx_post_impact_mean", sd_field = "mx_post_impact_sd",
-           n_field = "impact_sample_size_post", var_field = "mx_post_impact_var",
-           shelf_fields = c("post_impact_p_low", "post_impact_p50", "post_impact_p_high")),
-      list(prefix = "prior_offset", dt_field = "prior_offset_data_type",
-           mean_field = "mx_prior_offset_mean", sd_field = "mx_prior_offset_sd",
-           n_field = "offset_sample_size_prior", var_field = "mx_prior_offset_var",
-           shelf_fields = c("prior_offset_p_low", "prior_offset_p50", "prior_offset_p_high")),
-      list(prefix = "post_offset", dt_field = "post_offset_data_type",
-           mean_field = "mx_post_offset_mean", sd_field = "mx_post_offset_sd",
-           n_field = "offset_sample_size_post", var_field = "mx_post_offset_var",
-           shelf_fields = c("post_offset_p_low", "post_offset_p50", "post_offset_p_high"))
+      list(dt = "prior_impact_data_type", mean = "mx_prior_impact_mean",
+           sd = "mx_prior_impact_sd", n = "impact_sample_size_prior",
+           var = "mx_prior_impact_var"),
+      list(dt = "post_impact_data_type", mean = "mx_post_impact_mean",
+           sd = "mx_post_impact_sd", n = "impact_sample_size_post",
+           var = "mx_post_impact_var")
     )
 
     for (pc in point_configs) {
-      data_type <- as.character(row[[pc$dt_field]])
+      data_type <- as.character(row[[pc$dt]])
+      if (!is.na(data_type) && data_type == "Expert elicited") next
 
-      if (!is.na(data_type) && data_type == "Expert elicited") {
-        # SHELF fields required
-        for (sf in pc$shelf_fields) {
-          val <- row[[sf]]
-          if (is.null(val) || is.na(val) || is.na(suppressWarnings(as.numeric(val)))) {
-            errors <- rbind(errors, data.frame(
-              Row = i, Field = sf,
-              Message = paste0("SHELF field '", sf, "' required for Expert elicited data")))
-          }
-        }
-      } else if (!is.na(dist)) {
-        # Mean always required for non-expert
-        mean_val <- row[[pc$mean_field]]
-        if (is.null(mean_val) || is.na(mean_val) ||
-            is.na(suppressWarnings(as.numeric(mean_val)))) {
-          errors <- rbind(errors, data.frame(
-            Row = i, Field = pc$mean_field,
-            Message = paste0("'", pc$mean_field, "' is required")))
-        }
+      # Mean required
+      mean_val <- row[[pc$mean]]
+      if (is.null(mean_val) || is.na(mean_val) ||
+          is.na(suppressWarnings(as.numeric(mean_val)))) {
+        add_err(i, "Impact", pc$mean, paste0("'", pc$mean, "' is required"))
+      }
 
-        # Distribution-specific secondary param
+      # Distribution-specific secondary
+      if (!is.na(dist)) {
         if (dist == "Normal" || dist == "") {
-          sd_val <- row[[pc$sd_field]]
-          if (is.null(sd_val) || is.na(sd_val) ||
-              is.na(suppressWarnings(as.numeric(sd_val)))) {
-            errors <- rbind(errors, data.frame(
-              Row = i, Field = pc$sd_field,
-              Message = paste0("'", pc$sd_field, "' required for Normal distribution")))
+          sv <- row[[pc$sd]]
+          if (is.null(sv) || is.na(sv) || is.na(suppressWarnings(as.numeric(sv)))) {
+            add_err(i, "Impact", pc$sd, paste0("'", pc$sd, "' required for Normal"))
           }
         } else if (dist == "Poisson") {
-          n_val <- row[[pc$n_field]]
-          if (is.null(n_val) || is.na(n_val) ||
-              is.na(suppressWarnings(as.numeric(n_val)))) {
-            errors <- rbind(errors, data.frame(
-              Row = i, Field = pc$n_field,
-              Message = paste0("'", pc$n_field, "' required for Poisson distribution")))
+          nv <- row[[pc$n]]
+          if (is.null(nv) || is.na(nv) || is.na(suppressWarnings(as.numeric(nv)))) {
+            add_err(i, "Impact", pc$n, paste0("'", pc$n, "' required for Poisson"))
           }
         } else if (dist == "Negative Binomial") {
-          var_val <- row[[pc$var_field]]
-          if (is.null(var_val) || is.na(var_val) ||
-              is.na(suppressWarnings(as.numeric(var_val)))) {
-            errors <- rbind(errors, data.frame(
-              Row = i, Field = pc$var_field,
-              Message = paste0("'", pc$var_field, "' required for Negative Binomial")))
+          vv <- row[[pc$var]]
+          if (is.null(vv) || is.na(vv) || is.na(suppressWarnings(as.numeric(vv)))) {
+            add_err(i, "Impact", pc$var, paste0("'", pc$var, "' required for Neg Binom"))
           }
         }
       }
     }
-
-    # Cross-validate: benchmark_value, distribution, measurement_unit should be
-    # consistent within a biodiversity_component (warn, not error)
   }
 
-  # Coerce numeric columns
+  # --- Validate Offset rows ---
+  offset_required <- c("biodiversity_type", "biodiversity_component",
+                         "biodiversity_attribute",
+                         "offset_area", "offset_area_unit",
+                         "selected_confidence", "time_till_end", "discount_rate")
+
+  for (i in seq_len(nrow(offset_df))) {
+    row <- offset_df[i, , drop = FALSE]
+
+    for (fld in offset_required) {
+      val <- row[[fld]]
+      if (is.null(val) || is.na(val) || trimws(as.character(val)) == "") {
+        add_err(i, "Offset", fld, paste0("Required field '", fld, "' is missing"))
+      }
+    }
+
+    for (fld in c("offset_area", "time_till_end", "discount_rate")) {
+      val <- row[[fld]]
+      if (!is.null(val) && !is.na(val) && is.na(suppressWarnings(as.numeric(val)))) {
+        add_err(i, "Offset", fld, paste0("'", fld, "' must be a number"))
+      }
+    }
+
+    # Reject Expert elicited
+    for (dt_fld in c("prior_offset_data_type", "post_offset_data_type")) {
+      dt_val <- as.character(row[[dt_fld]])
+      if (!is.na(dt_val) && dt_val == "Expert elicited") {
+        add_err(i, "Offset", dt_fld,
+                "Expert elicited data type is not supported via spreadsheet. Use the app GUI.")
+      }
+    }
+
+    # Need the distribution from the matching impact row to validate secondary params
+    imp_key <- paste(row$biodiversity_type, row$biodiversity_component,
+                      row$biodiversity_attribute, sep = "|||")
+    imp_match <- which(paste(impact_df$biodiversity_type, impact_df$biodiversity_component,
+                              impact_df$biodiversity_attribute, sep = "|||") == imp_key)
+    dist <- if (length(imp_match) == 1) as.character(impact_df$distribution[imp_match]) else NA_character_
+
+    point_configs <- list(
+      list(dt = "prior_offset_data_type", mean = "mx_prior_offset_mean",
+           sd = "mx_prior_offset_sd", n = "offset_sample_size_prior",
+           var = "mx_prior_offset_var"),
+      list(dt = "post_offset_data_type", mean = "mx_post_offset_mean",
+           sd = "mx_post_offset_sd", n = "offset_sample_size_post",
+           var = "mx_post_offset_var")
+    )
+
+    for (pc in point_configs) {
+      data_type <- as.character(row[[pc$dt]])
+      if (!is.na(data_type) && data_type == "Expert elicited") next
+
+      mean_val <- row[[pc$mean]]
+      if (is.null(mean_val) || is.na(mean_val) ||
+          is.na(suppressWarnings(as.numeric(mean_val)))) {
+        add_err(i, "Offset", pc$mean, paste0("'", pc$mean, "' is required"))
+      }
+
+      if (!is.na(dist)) {
+        if (dist == "Normal" || dist == "") {
+          sv <- row[[pc$sd]]
+          if (is.null(sv) || is.na(sv) || is.na(suppressWarnings(as.numeric(sv)))) {
+            add_err(i, "Offset", pc$sd, paste0("'", pc$sd, "' required for Normal"))
+          }
+        } else if (dist == "Poisson") {
+          nv <- row[[pc$n]]
+          if (is.null(nv) || is.na(nv) || is.na(suppressWarnings(as.numeric(nv)))) {
+            add_err(i, "Offset", pc$n, paste0("'", pc$n, "' required for Poisson"))
+          }
+        } else if (dist == "Negative Binomial") {
+          vv <- row[[pc$var]]
+          if (is.null(vv) || is.na(vv) || is.na(suppressWarnings(as.numeric(vv)))) {
+            add_err(i, "Offset", pc$var, paste0("'", pc$var, "' required for Neg Binom"))
+          }
+        }
+      }
+    }
+  }
+
+  # --- Cross-sheet join validation ---
+  impact_keys <- paste(impact_df$biodiversity_type, impact_df$biodiversity_component,
+                        impact_df$biodiversity_attribute, sep = "|||")
+  offset_keys <- paste(offset_df$biodiversity_type, offset_df$biodiversity_component,
+                        offset_df$biodiversity_attribute, sep = "|||")
+
+  # Impact rows without matching offset
+  unmatched_impact <- which(!(impact_keys %in% offset_keys))
+  for (idx in unmatched_impact) {
+    add_err(idx, "Impact", "join_key",
+            paste0("No matching Offset row for: ",
+                   impact_df$biodiversity_type[idx], " / ",
+                   impact_df$biodiversity_component[idx], " / ",
+                   impact_df$biodiversity_attribute[idx]))
+  }
+
+  # Offset rows without matching impact
+  unmatched_offset <- which(!(offset_keys %in% impact_keys))
+  for (idx in unmatched_offset) {
+    add_err(idx, "Offset", "join_key",
+            paste0("No matching Impact row for: ",
+                   offset_df$biodiversity_type[idx], " / ",
+                   offset_df$biodiversity_component[idx], " / ",
+                   offset_df$biodiversity_attribute[idx]))
+  }
+
+  # --- Join sheets into a single attributes data.frame ---
+  # Remove join key columns from offset to avoid duplication
+  offset_data <- offset_df[, setdiff(colnames(offset_df), join_keys), drop = FALSE]
+  # Bind by position (rows are matched by key order)
+  # First reorder offset to match impact key order
+  offset_order <- match(impact_keys, offset_keys)
+
+  if (any(is.na(offset_order))) {
+    # Can't join — unmatched rows exist; return errors
+    return(list(valid = FALSE, errors = errors, project = project,
+                attributes = data.frame()))
+  }
+
+  offset_data <- offset_data[offset_order, , drop = FALSE]
+  joined <- cbind(impact_df, offset_data)
+
+  # Merge in documentation if present
+  if (!is.null(doc_df) && nrow(doc_df) > 0) {
+    doc_data <- doc_df[, setdiff(colnames(doc_df), join_keys), drop = FALSE]
+    doc_keys <- paste(doc_df$biodiversity_type, doc_df$biodiversity_component,
+                       doc_df$biodiversity_attribute, sep = "|||")
+    doc_order <- match(impact_keys, doc_keys)
+    # Only merge rows that matched; fill NA for unmatched
+    if (any(!is.na(doc_order))) {
+      doc_aligned <- doc_data[doc_order, , drop = FALSE]
+      joined <- cbind(joined, doc_aligned)
+    }
+  }
+
+  # --- Coerce numeric columns ---
   numeric_fields <- c("benchmark_value", "impact_area", "offset_area",
                        "mx_prior_impact_mean", "mx_prior_impact_sd",
                        "impact_sample_size_prior", "mx_prior_impact_var",
-                       "prior_impact_p_low", "prior_impact_p50", "prior_impact_p_high",
                        "mx_post_impact_mean", "mx_post_impact_sd",
                        "impact_sample_size_post", "mx_post_impact_var",
-                       "post_impact_p_low", "post_impact_p50", "post_impact_p_high",
                        "mx_prior_offset_mean", "mx_prior_offset_sd",
                        "offset_sample_size_prior", "mx_prior_offset_var",
-                       "prior_offset_p_low", "prior_offset_p50", "prior_offset_p_high",
                        "mx_post_offset_mean", "mx_post_offset_sd",
                        "offset_sample_size_post", "mx_post_offset_var",
-                       "post_offset_p_low", "post_offset_p50", "post_offset_p_high",
                        "time_till_end", "discount_rate")
   for (fld in numeric_fields) {
-    if (fld %in% colnames(attr_sheet)) {
-      attr_sheet[[fld]] <- suppressWarnings(as.numeric(attr_sheet[[fld]]))
+    if (fld %in% colnames(joined)) {
+      joined[[fld]] <- suppressWarnings(as.numeric(joined[[fld]]))
     }
   }
 
@@ -752,7 +740,7 @@ validate_xlsx_upload <- function(filepath) {
     valid      = nrow(errors) == 0,
     errors     = errors,
     project    = project,
-    attributes = attr_sheet
+    attributes = joined
   )
 }
 
@@ -769,7 +757,8 @@ process_xlsx_upload <- function(validation_result, session, results,
   updateTextInput(session, "project_name", value = proj$project_name %||% "")
   updateTextInput(session, "prepared_by",  value = proj$prepared_by %||% "")
   if (!is.null(proj$date) && nchar(proj$date) > 0) {
-    suppressWarnings(updateDateInput(session, "date", value = as.Date(proj$date, format = "%d-%m-%Y")))
+    suppressWarnings(updateDateInput(session, "date",
+                                     value = as.Date(proj$date, format = "%d-%m-%Y")))
   }
   updateTextAreaInput(session, "proposal_overview",    value = proj$proposal_overview %||% "")
   updateTextAreaInput(session, "ecological_context",   value = proj$ecological_context %||% "")

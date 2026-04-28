@@ -271,13 +271,13 @@ server <- function(input, output, session) {
                       draw_store, confidence_levels)
   })
   
-  # ---- EXCEL: download template ----
+  # ---- EXCEL: download template (static file from www/) ----
   output$xlsx_template_download <- downloadHandler(
     filename = function() {
       "BOAM_data_template.xlsx"
     },
     content = function(file) {
-      generate_xlsx_template(file)
+      file.copy("www/BOAM_data_template.xlsx", file)
     }
   )
 
@@ -293,7 +293,7 @@ server <- function(input, output, session) {
       validate_xlsx_upload(input$xlsx_upload_file$datapath),
       error = function(e) {
         list(valid = FALSE,
-             errors = data.frame(Row = NA, Field = "File",
+             errors = data.frame(Row = NA, Sheet = "File", Field = "File",
                                   Message = paste("Error reading file:", e$message),
                                   stringsAsFactors = FALSE),
              project = list(),
@@ -339,13 +339,14 @@ server <- function(input, output, session) {
           style = "font-size: 0.82em; margin-bottom: 0;",
           tags$thead(
             tags$tr(
-              tags$th("Row"), tags$th("Field"), tags$th("Message")
+              tags$th("Row"), tags$th("Sheet"), tags$th("Field"), tags$th("Message")
             )
           ),
           tags$tbody(
             lapply(seq_len(nrow(err_display)), function(j) {
               tags$tr(
                 tags$td(err_display$Row[j]),
+                tags$td(err_display$Sheet[j]),
                 tags$td(err_display$Field[j]),
                 tags$td(err_display$Message[j])
               )

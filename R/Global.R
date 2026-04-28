@@ -8,6 +8,7 @@ library(DT)
 library(shinyjs)
 library(kableExtra)
 library(stringr)
+library(openxlsx)
 
 source('./R/general_funcs.R')
 source('./R/calculation_funcs.R')
