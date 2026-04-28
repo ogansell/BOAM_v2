@@ -1,0 +1,402 @@
+/* -------------------------
+   Base & typography
+------------------------- */
+body {
+  font-family: 'Lato', sans-serif;
+  background-color: #F5F4F2;
+  margin: 0;
+  /* pad page so fixed header doesn't overlap content */
+  padding-top: 110px; /* 20 + 80 + ~10 spacing */
+}
+
+.popover-body { color: #194036 !important; }
+::placeholder { color: #B0B0B0 !important; }
+
+/* -------------------------
+   Buttons
+------------------------- */
+.btn-dark-green {
+  background-color: #194036 !important;
+  color: #fff !important;
+  border: none;
+  transition: color 0.3s;
+}
+.btn-dark-green:hover { color: #FFC51D !important; }
+
+.btn {
+  background-color: #E0DCCE;
+  color: #000;
+  border: none;
+}
+.btn:hover { color: #FFC51D !important; }
+
+/* Save/Load buttons visual treatment */
+#draft_export, #draft_import_btn, #new_report_btn  {
+  border: 1px solid #fff !important;
+  border-radius: 8px !important;
+  padding: 8px 8px !important;
+}
+#draft_export:hover, #draft_import_btn:hover { border-color: #FFC51D !important; }
+
+/* -------------------------
+   Top bars / header
+------------------------- */
+.top-stripe {
+  background-color: #FFC51D;
+  height: 10px;
+  /* base widths; overridden inside #sticky_header for full-bleed */
+  width: 120%;
+  margin-left: -15px;
+}
+
+.edit-btn.editing {
+    background-color: #C62828 !important;   /* red */
+    color: #FFC51D !important;               /* yellow text */
+    border-color: #C62828 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 0 2px rgba(255,197,29,.45) inset !important;
+  }
+  
+ /* strong highlight + readable text while editing */
+ .dataTables_wrapper table.dataTable tbody tr.editing-row > td { background:#FFA500 !important; }
+  .dataTables_wrapper table.dataTable tbody tr.editing-row > td *,
+  .dataTables_wrapper table.dataTable tbody tr.editing-row .edit-btn { color:#000 !important; font-weight:700; }
+
+
+.title-bar {
+  background-color: #194036;
+  color: #fff;
+  padding: 20px;
+  padding-right: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  width: 105%;
+  margin-left: -15px;
+}
+
+/* Fixed header that stays on top while you scroll */
+#sticky_header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1040; /* below Bootstrap modals (1050+) and your timeout overlay */
+}
+
+/* Make both bars bleed full viewport width */
+#sticky_header .top-stripe,
+#sticky_header .title-bar {
+  width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important; /* centers to viewport edges */
+}
+#sticky_header .top-stripe { height: 10px; }
+#sticky_header .title-bar  { height: 70px; }
+
+/* -------------------------
+   Sections & forms
+------------------------- */
+.section-header {
+  font-weight: bold; color: #384246;
+  font-size: 16px; margin: 0 0 10px 0;
+}
+
+.form-section {
+  background-color: #FFFFFF; padding: 20px;
+  margin-bottom: 18px; border-radius: 4px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}
+
+.form-section-box {
+  background-color: #FFFFFF; padding: 8px;
+  margin-bottom: 18px; border-radius: 4px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}
+.colored-box .box-header { margin-bottom: 8px; }
+
+/* Compact grid for inputs */
+.compact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+
+.compact-grid .break-row {
+  grid-column: 1 / -1; /* span full width -> starts a fresh row */
+}
+
+/* Start a new row without spanning full width */
+.compact-grid .row-start { 
+  grid-column: 1;        /* place at first column of the next row */
+}
+
+#cancel_edit {
+  margin-bottom: 12px; 
+}
+
+/* Side-by-side panels on larger screens */
+.two-col-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Hide icons on header buttons under 700px */
+@media (max-width: 750px) {
+  /* Hide the <i> icons inside these buttons */
+  #draft_export i,
+  #draft_import_btn i,
+  #new_report_btn i {
+    display: none !important;
+  }
+  /* Tighten spacing a bit when icons disappear */
+  #draft_export, #draft_import_btn, #new_report_btn {
+    gap: 0 !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+}
+
+/* Under 600px: shorten button labels */
+@media (max-width: 700px) {
+ /* hide the original text (icons already hidden in your other rule) */
+  #draft_export,
+  #draft_import_btn {
+    font-size: 0;            /* hides original label text */
+    position: relative;      /* anchor for the pseudo-labels */
+  }
+
+  /* show replacement labels */
+  #draft_export::after,
+  #draft_import_btn::after {
+    font-size: 14px;         /* make the pseudo-label visible */
+    line-height: 1;          /* keeps it compact */
+    display: inline-block;   /* behave like text */
+    vertical-align: middle;
+    /* optional spacing tweaks: */
+    /* margin-left: 0; */
+  }
+
+  #draft_export::after { content: "Save"; }
+  #draft_import_btn::after { content: "Load"; }
+  
+   #new_report_btn {
+    font-size: 14px;
+    line-height: 1;
+  }
+  
+}
+  
+  /* Optional: slightly shorter header bar + fix body offset */
+  #sticky_header .title-bar { height: 56px; }
+  body { padding-top: 96px; }      /* 10 stripe + 56 title + ~30 spacing */
+
+
+
+/* Offset grid: keep paired fields on one row even when Offset panel stacks under Impact */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  /* Offset is full width in this range; enforce 3 columns + pairing */
+  .offset-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+  .offset-grid .conf-level       { grid-column: 1; }
+  .offset-grid .conf-justify     { grid-column: 2 / span 2; }
+
+  .offset-grid .end-time         { grid-column: 1; }
+  .offset-grid .end-time-justify { grid-column: 2 / span 2; }
+
+  .offset-grid .discount-rate    { grid-column: 1; }
+  .offset-grid .discount-justify { grid-column: 2 / span 2; }
+}
+
+/* Fallback when only 2 columns fit (small tablets) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .offset-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+  .offset-grid .conf-level,
+  .offset-grid .end-time,
+  .offset-grid .discount-rate    { grid-column: 1; }
+  .offset-grid .conf-justify,
+  .offset-grid .end-time-justify,
+  .offset-grid .discount-justify { grid-column: 2; }
+}
+
+@media (min-width: 992px) {
+  .two-col-panels {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+@media (min-width: 1400px) {
+  .offset-grid {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+  .offset-grid .conf-level        { grid-column: 1; }
+  .offset-grid .conf-justify      { grid-column: 2 / span 2; }
+
+  .offset-grid .end-time          { grid-column: 1; }
+  .offset-grid .end-time-justify  { grid-column: 2 / span 2; }
+
+  .offset-grid .discount-rate     { grid-column: 1; }
+  .offset-grid .discount-justify  { grid-column: 2 / span 2; }
+}
+/* Compact summaries row */
+.summaries-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.summaries-row > * {
+  min-width: 180px;
+  text-align: center;
+}
+
+.input-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;   /*was 4px - ruduced to try and line up items better*/
+  width: 100%;
+}
+.input-block label {
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: #384246;
+}
+.input-block > label {
+  position: absolute;
+  top: 0;              /* anchor to top of the cell */
+  left: 0;
+  right: 0;
+  margin: 0;
+  line-height: 1.1;
+  /* optional: soften long labels a bit */
+  word-break: break-word;
+}
+
+/* Add top space only when a label is present */
+.input-block:has(> label),
+.input-block:has(> .shiny-input-container > label) {
+  padding-top: 24px;              /* reserve space for the label */
+}
+
+/* Position labels so wrapping doesn't push inputs down */
+.input-block > label,
+.input-block .shiny-input-container > label {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  margin: 0;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+
+
+.input-block input[type='number'],
+.input-block input[type='text'],
+.input-block select {
+  max-width: 100%;
+}
+
+.modal-footer {
+  text-align: center !important;
+}
+
+.npbv-alert { color: #C62828 !important; font-weight: 700; }
+
+#distribution_wrap .selectize-control { max-width: 200px !important; }
+
+/* -------------------------
+   Tabs
+------------------------- */
+.nav-tabs .nav-link.active {
+  background-color: #FFFFFF !important;
+  font-weight: bold !important;
+  border: 1px solid #dee2e6 !important;
+  border-bottom-color: transparent !important;
+}
+.nav-tabs .nav-link { color: #194036 !important; }
+
+/* -------------------------
+   Colored boxes
+------------------------- */
+.colored-box .box-header {
+  color: white !important;
+  font-weight: bold;
+  padding: 8px 12px;
+  margin: 0;
+  font-size: 18px;
+  border-bottom: 2px solid currentColor;
+}
+.red-box .box-header    { background-color: #231940 !important; }
+.blue-box .box-header   { background-color: #401923 !important; }
+.purple-box .box-header { background-color: #364019 !important; }
+
+/* -------------------------
+   Server disconnected overlay
+------------------------- */
+#ss-overlay {
+  background: rgba(0,0,0,0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important; /* Safari */
+  z-index: 2147483600 !important;
+}
+
+/* Dialog box */
+#ss-connect-dialog {
+  position: fixed !important;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 70vw !important;
+  height: 70vh !important;
+  background: #1f2937 !important;
+  color: #fff !important;
+  padding: 24px 32px !important;
+  border-radius: 12px !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,.45);
+  z-index: 2147483700 !important;
+}
+#ss-connect-dialog label { display: none !important; }
+#ss-connect-dialog::before {
+  content: 'Session Timed Out Due to Inactivity';
+  display: block;
+  font-size: 42px;
+  font-weight: 400;
+  margin-top: 22px;
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+/* Don't let the layout shrink below 300px; show horizontal scroll instead */
+html, body {
+  min-width: 590px;
+  overflow-x: auto;   /* enables the horizontal scrollbar when needed */
+}
+
+/* Wide screens: keep full-bleed header (100vw) */
+@media (min-width: 591px) {
+  #sticky_header .top-stripe,
+  #sticky_header .title-bar {
+    width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+  }
+}
+
+/* Narrower than 580px: header follows the page min-width instead of viewport */
+@media (max-width: 590px) {
+  #sticky_header,
+  #sticky_header .top-stripe,
+  #sticky_header .title-bar {
+    width: 100% !important;      /* equals 580px because of body min-width */
+    min-width: 590px !important;
+    margin-left: 0 !important;    /* undo the full-bleed centering trick */
+  }
+}

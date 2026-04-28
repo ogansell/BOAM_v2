@@ -1,0 +1,385 @@
+---
+title: "Biodiversity Offsetting Report"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    keep_tex: true
+    includes:
+      in_header: preamble.tex
+fontsize: 11pt
+params:
+  name: "Jane Doe"
+  project_date: "01-01-1079"
+  project_name: "Project Name"
+  proposal_overview: "proposal_overview"
+  ecological_context: "ecological_context"
+  biodiversity_impacts: "biodiversity_impacts"
+  offset_package: "offset_package"
+  saved_results_df: !r data.frame()
+  summary_results_df: !r data.frame()
+  long_report: false
+
+header-includes: 
+  - \pagestyle{empty}
+  - \usepackage{pdflscape}
+  - \usepackage{xcolor}
+  - \definecolor{darkgreenbg}{HTML}{194036}
+  - \usepackage[most]{tcolorbox}
+  - \usepackage{caption}
+  - \captionsetup[table]{labelfont=bf,textfont=bf}
+  - \newtcolorbox{mytitlebox}{
+      colback=darkgreenbg,
+      colframe=darkgreenbg,
+      boxrule=0pt,
+      arc=0mm,
+      top=6pt,
+      bottom=6pt,
+      left=10pt,
+      right=10pt,
+      width=\textwidth,
+      before skip=0pt,
+      after skip=0pt
+    }
+  - \newtcolorbox{mytitleboxL}{
+      colback=darkgreenbg,
+      colframe=darkgreenbg,
+      boxrule=0pt,
+      arc=0mm,
+      top=6pt,
+      bottom=6pt,
+      left=10pt,
+      right=10pt,
+      width=\linewidth,
+      before skip=0pt,
+      after skip=0pt
+    }
+  - \newtcolorbox{mycontentbox}{
+      colback=gray!15,
+      colframe=gray!15,
+      boxrule=0pt,
+      arc=0mm,
+      top=6pt,
+      bottom=6pt,
+      left=10pt,
+      right=10pt,
+      width=\textwidth,
+      before skip=0pt,
+      after skip=0pt
+    }
+  - \newtcolorbox{myfullbox}{
+      enhanced,
+      colback=gray!15,
+      colframe=gray!15,
+      boxrule=0pt,
+      arc=0mm,
+      top=0pt,
+      bottom=0pt,
+      left=0pt,
+      right=0pt,
+      width=\textwidth,
+      before skip=1em,
+      after skip=1em,
+      nobeforeafter,
+      boxsep=0pt,
+      sharp corners,
+      valign=center,
+      halign=left,
+      breakable=false
+    }
+---
+
+```{r header_info, results='asis', echo=FALSE}
+cat(paste0(
+  "Report prepared by: \n \\newline \n", ifelse(nchar(params$name) > 0, params$name, "\\hspace{1cm}"), " \n \\newline \\newline \n",
+  "On: \n \\newline \n", ifelse(nchar(params$project_date) > 0, params$project_date, "\\hspace{1cm}"), " \n \\newline \\newline \n",
+  "This report summarizes the biodiversity offsetting proposal for ", params$project_name, ". \n \\newline \n"
+))
+
+```
+
+```{r all_overview_boxes, echo=FALSE, results='asis'}
+# ===============================
+# Overview Boxes
+# ===============================
+
+knitr::asis_output(paste0(
+  "\\begin{samepage}\n",
+  "\\noindent\n",
+  "\\begin{mytitlebox}\n",
+  "\\Large\\bfseries\\color{white} Proposal Overview\n",
+  "\\end{mytitlebox}\n\n",
+  "\\begin{mycontentbox}\n",
+  params$proposal_overview, "\n",
+  "\\end{mycontentbox}\n",
+  "\\end{samepage}\n",
+  
+  "\\vspace{1em}\n\n",
+  
+  "\\begin{myfullbox}\n",
+  "\\noindent\n",
+  "\\begin{mytitlebox}\n",
+  "\\Large\\bfseries\\color{white} Ecological Context and Impact Summary\n",
+  "\\end{mytitlebox}\n\n",
+  "\\begin{mycontentbox}\n",
+  params$ecological_context, "\n",
+  "\\end{mycontentbox}\n\n",
+  "\\end{myfullbox}\n",
+  "\\vspace{1em}\n\n",
+  
+   "\\begin{myfullbox}\n",
+  "\\noindent\n",
+  "\\begin{mytitlebox}\n",
+  "\\Large\\bfseries\\color{white} Biodiversity Impacts Addressed Outside of the Model\n",
+  "\\end{mytitlebox}\n\n",
+  "\\begin{mycontentbox}\n",
+  params$biodiversity_impacts, "\n",
+  "\\end{mycontentbox}\n\n",
+  "\\end{myfullbox}\n",
+  "\\vspace{1em}\n\n",
+  
+  "\\begin{myfullbox}\n",
+  "\\noindent\n",
+  "\\begin{mytitlebox}\n",
+  "\\Large\\bfseries\\color{white} Offset Package\n",
+  "\\end{mytitlebox}\n\n",
+  "\\begin{mycontentbox}\n",
+  params$offset_package, "\n",
+  "\\end{mycontentbox}\n",
+  "\\end{myfullbox}\n"
+  
+))
+```
+
+
+```{r, results='asis', echo=FALSE}
+# ===============================
+# All Calculation Rows
+# ===============================
+
+suppressPackageStartupMessages({
+  library(knitr)
+  library(kableExtra)
+  library(dplyr)
+  library(stringr)
+})
+
+knitr::asis_output(paste0(
+  "\\newpage\n",
+  "\\begin{landscape}\n"
+))
+
+knitr::asis_output(paste0(
+  "\\noindent\n",
+  "\\begin{mytitleboxL}\n",
+  "\\Large\\bfseries\\color{white} Loss/Gain Calculation Results\n",
+  "\\end{mytitleboxL}\n\n"
+))
+
+# Prepare data with cleaned column names
+df_clean <- params$saved_results_df
+colnames(df_clean) <- gsub("_", " ", colnames(df_clean))
+
+# ------------------------------
+# Identify and escape cells with special LaTeX characters
+# ------------------------------
+
+
+latex_specials <- c("%", "&", "_", "#", "{", "}", "$", "^", "~", "\\")
+has_special_chars <- function(x) {
+  sapply(latex_specials, function(char) str_detect(x, fixed(char))) |> rowSums() > 0
+}
+
+
+df_clean <- df_clean %>%
+  mutate(across(where(is.character), ~ ifelse(has_special_chars(.),
+                                              cell_spec(., "latex", escape = TRUE),
+                                              .)))
+
+# ---- Now create LaTeX-containing columns ----
+df_clean <- df_clean |>
+  dplyr::mutate(
+    Impact = paste0(round(`Impact Mean`, 2), " ± ", round(`Impact CI`, 2)),
+    Offset = paste0(round(`Offset Mean`, 2), " ± ", round(`Offset CI`, 2)),
+    NPBV   = ifelse(`NPBV Mean` - `NPBV CI` < 0,
+                    cell_spec(
+                      paste0(round(`NPBV Mean`, 2), " ± ", round(`NPBV CI`, 2)),
+                      "latex",
+                      color = "red"
+                    ),
+                    paste0(round(`NPBV Mean`, 2), " ± ", round(`NPBV CI`, 2)))
+  ) |>
+  dplyr::select(
+    `Biodiversity Type` = `biodiversity type`,
+    `Component`         = `biodiversity component`,
+    `Attribute`         = `biodiversity attribute`,
+    `Measurement Unit`  = `measurement unit`,
+    Impact, Offset, NPBV
+  )
+
+
+
+# ------------------------------
+# Build LaTeX table
+# ------------------------------
+df_clean |>
+  kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
+      caption = "Biodiversity Offset Results", row.names = FALSE) |>
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9)
+
+
+knitr::asis_output("\\end{landscape}")
+
+
+```
+
+
+```{r, results='asis', echo=FALSE}
+# ===============================
+# Summary Table
+# ===============================
+
+suppressPackageStartupMessages({
+  library(knitr)
+  library(kableExtra)
+  library(dplyr)
+  library(stringr)
+})
+
+knitr::asis_output(paste0(
+  "\\newpage\n",
+  "\\begin{landscape}\n"
+))
+
+knitr::asis_output(paste0(
+  "\\noindent\n",
+  "\\begin{mytitleboxL}\n",
+  "\\Large\\bfseries\\color{white} Loss/Gain Calculation Summary\n",
+  "\\end{mytitleboxL}\n\n"
+))
+
+# Prepare data
+df_clean <- params$summary_results_df
+colnames(df_clean) <- gsub("_", " ", colnames(df_clean))
+
+# Identify LaTeX special characters
+latex_specials <- c("%", "&", "_", "#", "{", "}", "$", "^", "~", "\\")
+has_special_chars <- function(x) {
+  Reduce(`|`, lapply(latex_specials, function(char) str_detect(x, fixed(char))))
+}
+
+# Escape character columns that contain special LaTeX characters
+df_clean <- df_clean %>%
+  mutate(across(where(is.character), ~ifelse(has_special_chars(.x),
+                                             cell_spec(.x, "latex", escape = TRUE),
+                                             .x)))
+
+# Merge Mean ± CI columns if they exist, with red highlighting for NPBV < 0
+df_clean <- df_clean |>
+  dplyr::mutate(
+    Impact = if ("Impact Mean" %in% names(df_clean)) 
+      paste0(round(`Impact Mean`, 2), " ± ", round(`Impact CI`, 2)) else NA,
+    
+    Offset = if ("Offset Mean" %in% names(df_clean)) 
+      paste0(round(`Offset Mean`, 2), " ± ", round(`Offset CI`, 2)) else NA,
+    
+    NPBV = if ("NPBV Mean" %in% names(df_clean)) {
+      ifelse(`NPBV Mean` - `NPBV CI` < 0,
+             cell_spec(paste0(round(`NPBV Mean`, 2), " ± ", round(`NPBV CI`, 2)),
+                       "latex", color = "red", bold = FALSE),
+             paste0(round(`NPBV Mean`, 2), " ± ", round(`NPBV CI`, 2)))
+    } else NA
+  ) |>
+  dplyr::select(-dplyr::matches("Mean|CI"))  # drop raw mean/CI columns
+
+# Build LaTeX table
+df_clean |>
+  kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
+      caption = "Biodiversity Offset Scenario Results Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9)
+
+knitr::asis_output("\\end{landscape}")
+
+
+```
+
+
+
+```{r, results='asis', echo=FALSE}
+
+# ===============================
+# Detailed Tables Header Box
+# ===============================
+
+if(params$long_report) { 
+  
+  knitr::asis_output(paste0(
+    "\\noindent\n",
+    "\\begin{mytitleboxL}\n",
+    "\\Large\\bfseries\\color{white} Appendix A: Detailed Results\n",
+    "\\end{mytitleboxL}\n\n"
+  ))
+}
+
+```
+
+
+
+```{r, results='asis', echo=FALSE}
+# ===============================
+# Detailed Tables
+# ===============================
+
+if(params$long_report) { 
+  
+  suppressPackageStartupMessages({
+    library(knitr)
+    library(kableExtra)
+    library(dplyr)
+    library(tidyr)
+    library(purrr)
+  })
+  
+  df_clean <- params$saved_results_df
+  
+  # Tell LaTeX to make table labels and captions bold
+  knitr::asis_output("\\captionsetup[table]{labelfont=bf,textfont=bf}\n")
+  
+  for (i in seq_len(nrow(df_clean))) {
+    
+    row_data <- df_clean[i, ] |>
+      mutate(across(everything(), as.character)) 
+    
+    row_data <- as_tibble(cbind(nms = names(row_data), t(row_data)))
+    colnames(row_data) <- c("Parameter", "Value")
+    
+    knitr::asis_output(paste0(
+      "\\begin{landscape}\n",
+      "\\noindent\n",
+      "\\begin{mytitleboxL}\n",
+      "\\Large\\bfseries\\color{white} Appendix A: Detailed Results (Row ", i, ")\n",
+      "\\end{mytitleboxL}\n\n"
+    ))
+    
+    print(
+      row_data |>
+        kbl(booktabs = TRUE, 
+            caption = paste0("Biodiversity Offset Detailed Results: Calculation ", i),
+            row.names = FALSE,
+            longtable = TRUE) %>%
+        kable_styling(latex_options = c("striped"), font_size = 9) %>%
+        column_spec(1, width = "4cm") %>%
+        column_spec(2, width = "10cm")
+    )
+    
+    
+    knitr::asis_output(
+      "\\end{landscape}\n\\clearpage\n"
+    )
+  }
+  
+}
+
+
+
+```
+
