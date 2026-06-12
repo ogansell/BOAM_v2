@@ -145,6 +145,12 @@ input$save_and_reset
 - Starting a new report (`confirm_new`) clears the autosave via `session$sendCustomMessage("clearAutosave", list())`
 - This is a workaround for the underlying ShinyApps.io idle-timeout issue, not a fix for it — it just means in-progress work isn't lost when the session disconnects
 
+### Autosave implementation gotchas
+
+- **`Shiny.addCustomMessageHandler(name, handler)` requires a one-argument handler** — a zero-arg `function() {...}` throws a synchronous `"handler must be a function that takes one argument."` error that is NOT caught by surrounding try/catch and halts the rest of that `<script>` block (including any handlers/listeners registered after it). All autosave message handlers in `ui.R` must take a parameter even if unused.
+- **`dat$saved_results` arrives in two different shapes** depending on the path: file-based draft import (`jsonlite::fromJSON` of row-records JSON) yields a proper data.frame, but the autosave path (`session$sendCustomMessage` serializing a data.frame, received as `input$autosave_check`) yields a **columnar list** (`{"col": [val], ...}`, with `null` for NA cells). `restore_draft_data()` in `general_funcs.R` handles both: data.frames pass through directly; columnar lists are unlisted column-by-column (converting JSON `null` → `NA`) and rebuilt via `as.data.frame()`.
+- **Modal stacking on page load**: the startup "About" modal (`show_startup_modal()`) and the "Resume previous session?" modal can both be open at once, with "About" rendered on top — the user must dismiss "About" first to see the restore prompt. Not yet fixed, just a known UX wrinkle.
+
 ---
 
 ## Excel Upload (Bulk Data Entry)
