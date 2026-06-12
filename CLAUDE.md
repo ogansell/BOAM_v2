@@ -136,6 +136,18 @@ input$save_and_reset
 
 ---
 
+## Excel Upload (Bulk Data Entry)
+
+- **Validate:** `validate_xlsx_upload()` (`general_funcs.R`) reads the uploaded `.xlsx` via `read.xlsx()` — **must pass `sep.names = " "`** on every `read.xlsx()` call, otherwise openxlsx's default `sep.names = "."` turns headers like `"Biodiversity Type"` into `"Biodiversity.Type"`, which silently breaks `rename_to_ids()` (no columns get renamed, every `row$<id>` is `NULL`)
+- Expected sheets: `Project Details`, `Impact Attributes`, `Offset Attributes`, `Documentation` (optional), `Instructions` (reference only)
+- Column label ↔ internal ID maps: `xlsx_impact_columns()`, `xlsx_offset_columns()`, `xlsx_doc_columns()`; `rename_to_ids()` applies them
+- Join key across Impact/Offset/Documentation sheets: `biodiversity_type` + `biodiversity_component` + `biodiversity_attribute` (see `join_keys`)
+- Expert-elicited (SHELF) data type is **not supported** via spreadsheet — rejected during validation
+- **Process:** `process_xlsx_upload()` (`general_funcs.R`) re-simulates every row via `resimulate_row()`, replaces `saved_results()`/`draw_store`/`summary_results()` entirely, and restores Project Details inputs
+- **NA vs NULL gotcha:** blank cells from `read.xlsx()` come back as `NA` (e.g. `NA_character_`), not `NULL`. Guards like `if (!is.null(x) && ...)` are insufficient — also need `!is.na(x)` before any numeric/length check (`nchar()`, `>`, etc.), since `TRUE && NA` throws `"missing value where TRUE/FALSE needed"`
+
+---
+
 ## Edit Mode
 
 When a user clicks "Edit" on a saved row:
