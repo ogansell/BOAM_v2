@@ -2,7 +2,6 @@ show_startup_modal <- function() {
   showModal(modalDialog(
     title = "About",
     HTML("
-      <h4>FIRST CUT SUGGESTED ALTERNATIVE TEXT [Fleur]</h4>
 
       <p><strong>ABOUT</strong></p>
 
