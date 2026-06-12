@@ -287,10 +287,10 @@ server <- function(input, output, session) {
   # ---- EXCEL: download template (static file from www/) ----
   output$xlsx_template_download <- downloadHandler(
     filename = function() {
-      "BOAM_data_template.xlsx"
+      "Net_Gain_Data_Template.xlsx"
     },
     content = function(file) {
-      file.copy("www/BOAM_data_template.xlsx", file)
+      file.copy("www/Net_Gain_Data_Template.xlsx", file)
     }
   )
 
