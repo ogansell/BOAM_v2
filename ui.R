@@ -27,8 +27,14 @@ ui <- fluidPage(
       border: 2px solid red !important;
       box-shadow: none !important;
     }
-  "))
+  ")),
 
+    # Keepalive: send a periodic event to reset shinyapps.io's idle timer
+    tags$script(HTML("
+    setInterval(function() {
+      Shiny.setInputValue('keepalive_ping', Date.now(), {priority: 'event'});
+    }, 4 * 60 * 1000);
+  "))
 
   ),
 

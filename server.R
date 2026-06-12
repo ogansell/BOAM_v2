@@ -7,7 +7,12 @@ server <- function(input, output, session) {
   
   # start buttons disabld
   disable("save_and_reset")
-  
+
+  # Keepalive: receive periodic ping from client to reset shinyapps.io idle timer
+  observeEvent(input$keepalive_ping, {
+    # no-op: exists only to receive the keepalive ping and reset the idle timer
+  }, ignoreInit = TRUE)
+
   
   # * define reactives ----------------------------------------------------------
   
