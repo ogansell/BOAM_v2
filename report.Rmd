@@ -186,7 +186,7 @@ colnames(df_clean) <- gsub("[_.]", " ", colnames(df_clean))
 
 latex_specials <- c("%", "&", "_", "#", "{", "}", "$", "^", "~", "\\")
 has_special_chars <- function(x) {
-  sapply(latex_specials, function(char) str_detect(x, fixed(char))) |> rowSums() > 0
+  Reduce(`|`, lapply(latex_specials, function(char) str_detect(x, fixed(char))))
 }
 
 df_clean <- df_clean %>%

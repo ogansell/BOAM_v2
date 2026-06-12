@@ -712,7 +712,7 @@ process_xlsx_upload <- function(validation_result, session, results,
   # --- Restore Project Details into the UI ---
   updateTextInput(session, "project_name", value = proj$project_name %||% "")
   updateTextInput(session, "prepared_by",  value = proj$prepared_by %||% "")
-  if (!is.null(proj$date) && nchar(proj$date) > 0) {
+  if (!is.null(proj$date) && !is.na(proj$date) && nchar(proj$date) > 0) {
     suppressWarnings(updateDateInput(session, "date",
                                      value = as.Date(proj$date, format = "%d-%m-%Y")))
   }
