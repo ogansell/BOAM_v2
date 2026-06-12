@@ -146,7 +146,7 @@ ui <- fluidPage(
                                tags$br(),
                                textAreaInput("ecological_context", "Ecological Context and Impact Summary", placeholder = "Summarise the context of the ecological and biodiversity features impacted by the proposed development. [500 words]", rows = 6, width = "100%"),
                                tags$br(),
-                               textAreaInput("biodiversity_impacts", "Biodiversity Impacts Addressed Outside of the Model", placeholder = "Summarise of all other ecological values at the site that will be impacted by the activity that are not being entered into this model. [500 words]", rows = 6, width = "100%"),
+                               textAreaInput("biodiversity_impacts", "Biodiversity Impacts Addressed Outside of the Model", placeholder = "Summarise any additional ecological values at the site that may be affected by the activity but are not included in this model. [500 words]", rows = 6, width = "100%"),
                                tags$br(),
                                textAreaInput("offset_package", "Summary Description of Proposed Offset Package", placeholder = "Describe the proposed offset package. [500 words]", rows = 6, width = "100%")
                            ),
@@ -166,7 +166,7 @@ ui <- fluidPage(
                              style = "margin: 10px 0;",  # 15px top and bottom margin
                              actionButton(
                                "help_btn",
-                               "How to Enter Data",
+                               "How to use this model",
                                icon = icon("circle-info"),
                                class = "btn-secondary"
                              ),

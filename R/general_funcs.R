@@ -3,8 +3,6 @@ show_startup_modal <- function() {
     title = "About",
     HTML("
 
-      <p><strong>ABOUT</strong></p>
-
       <p>This net gain model evaluates offset proposals for ecological equivalence and net gain across biodiversity type, amount, and time, based on user inputs, and can be used to simulate numerous biodiversity offset scenarios to compare predicted outcomes.</p>
 
       <p>The model uses Net Present Biodiversity Value (NPBV) to indicate predicted outcomes from offset proposals, coupled with prediction intervals to describe certainty associated with the model outputs.</p>
@@ -18,7 +16,7 @@ show_startup_modal <- function() {
         <li>Save and export model output summaries</li>
       </ul>
 
-      <p><strong>The system will time out after 60 minutes of inactivity.</strong></p>
+      <p><strong>The system will time out after 120 minutes of inactivity.</strong></p>
       <p><strong>Use the Save Draft feature regularly to ensure work is not lost.</strong></p>
 
       <br>

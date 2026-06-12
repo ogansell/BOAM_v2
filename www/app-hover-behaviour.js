@@ -6,12 +6,12 @@ $(function () {
   const tooltips = {
     project_name: 'If running scenarios or versions ensure this is identified in the project name',
     prepared_by: 'Enter your name and organisation',
-    biodiversity_type: 'Biodiversity Types are the key biodiversity features of concern. A Biodiversity Type can be terrestiral or aquatic, an ecosystem, a specific habitat, or a species Each Biodiversity Type requires its own model to be run.',
-    biodiversity_component: 'Biodiversity Types are the key biodiversity features of concern. A Biodiversity Type can be terrestiral or aquatic, an ecosystem, a specific habitat, or a species. Each Biodiversity Type requires its own model to be run.',
+    biodiversity_type: 'Biodiversity Types are the key biodiversity features of concern. A Biodiversity Type can be terrestrial or aquatic, an ecosystem, a specific habitat, or a species. Each Biodiversity Type requires its own model to be run.',
+    biodiversity_component: 'The Biodiversity Component is a specific, measurable element of the Biodiversity Type, that is being assessed in the offset model, e.g. population size, diversity, species, habitat type.',
     biodiversity_attribute: 'Biodiversity Attributes collectively make up the Biodiversity Component. Biodiversity Attributes are the measured values balanced within the model. Biodiversity Attributes are equally weighted',
     measurement_unit: 'Measurement units must be relevant to the associated Biodiversity Attribute and the same unit of measurement must be used for both Impact and Offset data inputs ',
     num_simulations: 'Further detail on determining the number of simulations is provided in the Supplementary User Manual (see the ABOUT tab)',
-    distribution: 'Further detail on appropriate statistical distribution is provided in the Supplementary User Manual (see the ABOUT tab)',
+    distribution: 'Select the appropriate statistical distribution for your data type.',
     benchmark_value: 'Benchmark values (reflecting the highest possible condition) provide a common reference point for evaluating losses and gains. Benchmark values are required for each Biodiversity Attribute and must in the same measures as used to describe the Biodiversity Attribute at the Impact Site. Further detail on benchmark values are provided in the User Manual (see the ABOUT tab)',
     
     selected_confidence: 'Hover over text inserted here - 12',
@@ -23,15 +23,15 @@ $(function () {
     impact_area_expert_details: 'A brief description of the methods used to derive the Mean Attribute Measure Prior to Impact. This information contextualises the reliability of the attribute estimate.',
     impact_area_proxy_details: 'A brief description of the methods used to derive the Mean Attribute Measure Prior to Impact. This information contextualises the reliability of the attribute estimate.',
     mx_prior_impact_mean: 'Mean value of the Biodiversity Attribute before any  project impact occurs.',
-    mx_prior_offset_mean: 'Hover over text inserted here - 16',
+    mx_prior_offset_mean: 'Mean value of the Biodiversity Attribute before any offset action occurs.',
     mx_prior_impact_sd: 'The standard deviation of the Mean Attribute Measure Prior to Impact.',
     prior_impact_sd_data_type: 'The method used to derive the standard deviation of the mean attribute measure prior to impact.',
     prior_impact_sd_empirical_details: 'If applicable -- a brief description of the methods used to derive the mean Biodiversity Attribute Measure Post Impact. This information contextualises the reliability of the attribute estimate.',
     prior_impact_sd_modelled_details: 'If applicable -- a brief description of the methods used to derive the mean Biodiversity Attribute Measure Post Impact. This information contextualises the reliability of the attribute estimate.',
     prior_impact_sd_expert_details: 'If applicable -- a brief description of the methods used to derive the mean Biodiversity Attribute Measure Post Impact. This information contextualises the reliability of the attribute estimate.',
     prior_impact_sd_proxy_details: 'If applicable -- a brief description of the methods used to derive the mean Biodiversity Attribute Measure Post Impact. This information contextualises the reliability of the attribute estimate.',
-    mx_post_impact_mean: 'Mean value of the Biodiversity Attribute before any  project impact occurs. ',
-    mx_post_impact_sd: 'The expected standard deviation of the mean attribute measure post impact.',
+    mx_post_impact_mean: 'Expected mean value of the Biodiversity Attribute after the project impact occurs.',
+    mx_post_impact_sd: 'Expected standard deviation of the mean attribute measure post impact.',
     
     offset_area: 'The area over which the proposed offset action related to this Biodiversity Attribute will be implemented',
 
@@ -45,7 +45,7 @@ $(function () {
     prior_offset_sd_proxy_details: 'A brief description of the methods used to derive the mean attribute measure prior to offset. This information contextualises the reliability of the attribute estimate.',
    
     mx_post_offset_mean: 'Expected mean value of the attribute at the offet site at the Time till End (Years).',
-    mx_post_offset_sd: 'The expected standard deviation of the mean attribute measure post offset.',
+    mx_post_offset_sd: 'Expected standard deviation of the mean attribute measure post offset.',
     
     post_offset_sd_data_type: 'A brief description of the methods used to derive the mean attribute measure prior to offset. This information contextualises the reliability of the attribute estimate.',
     post_offset_sd_empirical_details: 'A brief description of the methods used to derive the mean attribute measure prior to offset. This information contextualises the reliability of the attribute estimate.',
@@ -61,7 +61,7 @@ $(function () {
     
     time_till_end: 'The time (years) until the anticipated Attribute Measure Post Offset will be acheived.',
     offset_time_till_end_justify: 'Provide explanation to support the indicated time horizon to achieve the anticipated end point.',
-    discount_rate: 'Discount rates are used to account for time lags between losses and gains.Enter a discount rate as a percentage. More discussion the use of discount rates is provided in the User Manual and Govt Good Practice Guidance.',
+    discount_rate: 'Discount rates are used to account for time lags between losses and gains. Enter a discount rate as a percentage. Information on discount rates is provided in the User Manual and the New Zealand Government’s "Guidance on Good Practice Biodiversity Offsetting in New Zealand"',
     offset_discount_rate_justify: 'Provide explanation for choice of discount rate.',
     
     
