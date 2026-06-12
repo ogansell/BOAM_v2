@@ -399,7 +399,7 @@ validate_xlsx_upload <- function(filepath) {
   }
 
   # --- Read Project Details ---
-  proj_sheet <- tryCatch(read.xlsx(filepath, sheet = "Project Details", colNames = TRUE),
+  proj_sheet <- tryCatch(read.xlsx(filepath, sheet = "Project Details", colNames = TRUE, sep.names = " "),
                           error = function(e) NULL)
   if (is.null(proj_sheet)) {
     add_err(NA, "Project Details", "Sheet", "Missing 'Project Details' sheet")
@@ -424,7 +424,7 @@ validate_xlsx_upload <- function(filepath) {
   }
 
   # --- Read Impact Attributes ---
-  impact_df <- tryCatch(read.xlsx(filepath, sheet = "Impact Attributes", colNames = TRUE),
+  impact_df <- tryCatch(read.xlsx(filepath, sheet = "Impact Attributes", colNames = TRUE, sep.names = " "),
                          error = function(e) NULL)
   if (is.null(impact_df)) {
     add_err(NA, "Impact Attributes", "Sheet", "Missing 'Impact Attributes' sheet")
@@ -437,7 +437,7 @@ validate_xlsx_upload <- function(filepath) {
   impact_df <- rename_to_ids(impact_df, xlsx_impact_columns())
 
   # --- Read Offset Attributes ---
-  offset_df <- tryCatch(read.xlsx(filepath, sheet = "Offset Attributes", colNames = TRUE),
+  offset_df <- tryCatch(read.xlsx(filepath, sheet = "Offset Attributes", colNames = TRUE, sep.names = " "),
                          error = function(e) NULL)
   if (is.null(offset_df)) {
     add_err(NA, "Offset Attributes", "Sheet", "Missing 'Offset Attributes' sheet")
@@ -450,7 +450,7 @@ validate_xlsx_upload <- function(filepath) {
   offset_df <- rename_to_ids(offset_df, xlsx_offset_columns())
 
   # --- Read Documentation (optional) ---
-  doc_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation", colNames = TRUE),
+  doc_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation", colNames = TRUE, sep.names = " "),
                       error = function(e) NULL)
   if (!is.null(doc_df) && nrow(doc_df) > 0) {
     doc_df <- rename_to_ids(doc_df, xlsx_doc_columns())
