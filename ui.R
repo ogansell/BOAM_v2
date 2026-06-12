@@ -675,41 +675,47 @@ ui <- fluidPage(
 
                       tags$h4("How uncertainty is calculated in this model"),
 
-                      tags$p("The original BOAM model uses single point values \u2014 one number in, one number out.
-                              This revised model makes uncertainty explicit by using Monte Carlo simulation."),
+                      tags$p("The original BOAM model is deterministic and uses single point values to describe biodiversity values at the impact and offset sites—one number in, 
+                             one number out. This revised model makes uncertainty explicit by using a Monte Carlo simulation framework to propagate 
+                             uncertainty through all stages of the offset calculation."),
 
-                      tags$p("For each biodiversity attribute, the model takes the user\u2019s inputs (mean and a measure
-                              of spread such as standard deviation, sample size, or expert-elicited range) and generates
-                              10,000 plausible values from the appropriate statistical distribution. It does this for all
-                              four measurement points: prior to impact, post impact, prior to offset, and post offset.
-                              These simulated values are then carried through the full NPBV calculation \u2014 benchmark
-                              scaling, area weighting, confidence adjustment, and discounting \u2014 producing 10,000
-                              plausible NPBV outcomes for each attribute."),
+                      tags$p("For each biodiversity attribute, the model takes the user’s inputs describing central tendency and uncertainty 
+                      (for example, a mean and a measure of spread such as standard deviation, sample size, 
+                      or an expert-elicited range) and generates 10,000 plausible values from an appropriate 
+                      statistical distribution constrained by ecological bounds. This is done independently for all four measurement points: 
+                             prior to impact, post impact, prior to offset, and post offset."),
+                      
+                      tags$p("These simulated values are then carried through the full Net Present Biodiversity Value (NPBV) calculation - including benchmark scaling, 
+                             area weighting, confidence adjustment, and time discounting - producing 10,000 plausible NPBV outcomes for each attribute. 
+                             In this way, uncertainty in the inputs is consistently propagated through the entire model, 
+                             rather than being applied only to the final result."),
 
-                      tags$p("From these 10,000 outcomes, the model reports:"),
+                      tags$p("From the resulting distribution of 10,000 outcomes, 
+                             the model reports three summary statistics:"),
                       tags$ul(
                         tags$li(tags$strong("Mean"), " \u2014 the central estimate of the NPBV."),
-                        tags$li(tags$strong("5th percentile (P5)"), " \u2014 the value below which only 5% of simulated
-                                 outcomes fall. This represents a pessimistic but plausible scenario."),
-                        tags$li(tags$strong("95th percentile (P95)"), " \u2014 the value above which only 5% of outcomes
-                                 fall. This represents an optimistic but plausible scenario.")
+                        tags$li(tags$strong("5th percentile (P5)"), " \u2014 a pessimistic but plausible scenario, 
+                                representing the lower boundary below which only 5% of simulated outcomes fall."),
+                        tags$li(tags$strong("95th percentile (P95)"), " \u2014 an optimistic but plausible scenario, 
+                                representing the upper boundary above which only 5% of simulated outcomes fall.")
                       ),
 
-                      tags$p("Together, the P5 and P95 form a ", tags$strong("90% prediction interval"),
-                             " \u2014 the range within which the true NPBV is expected to fall with 90% probability,
-                              given the input assumptions. Unlike symmetric confidence intervals, these bounds can
-                              be asymmetric, honestly reflecting the shape of the underlying uncertainty."),
+                      tags$p("Together, the P5 and P95 bounds define a 90% prediction interval - the range within which the 
+                             true NPBV is expected to fall with 90% probability, given the input assumptions. 
+                             Unlike traditional confidence intervals, these bounds are not constrained to be symmetric, 
+                             honestly reflecting the true shape of the underlying uncertainty in the model inputs and transformations."),
 
-                      tags$p("At the ", tags$strong("component level"),
-                             ", the model averages the attribute-level simulations with equal weight, consistent
-                              with the BOAM framework\u2019s disaggregated currency. For each of the 10,000 simulation
-                              runs, the attribute NPBV values within a component are averaged to produce a single
-                              component NPBV. The component-level mean, P5, and P95 are then taken from the
-                              resulting distribution of 10,000 component scores."),
+                      tags$p("At the component level, the model aggregates the attribute-level simulation results using equal weighting, 
+                             consistent with the BOAM framework’s disaggregated currency and its emphasis on like-for-like exchanges, 
+                             transparency, and the avoidance of implicit value weighting. For each of the 10,000 simulation runs, 
+                             the attribute-level NPBV values within a component are averaged to produce a single component-level NPBV.
+                             The component-level mean, P5, and P95 are then derived from the resulting distribution of 10,000 component scores."),
 
-                      tags$p("A negative P5 at either the attribute or component level signals that there is a
-                              meaningful probability (at least 5%) that the offset will not achieve no net loss for
-                              that element of biodiversity. These cases are highlighted in red throughout the model outputs.")
+                      tags$p("A negative P5 at either the attribute or component level indicates that there is a meaningful probability (at least 5%) 
+                             that the proposed offset will fail to achieve no net loss for that element of biodiversity, given the stated assumptions. 
+                             These cases are highlighted in red throughout the model outputs to clearly signal residual risk, 
+                             even where the mean outcome may be neutral or positive. Similarly, a positive mean NPBV with a 90% prediction interval that 
+                             includes zero indicates that the proposed offset may only achieve no net loss, thereby failing to guarantee a net gain outcome.")
                     )
                   )
 
