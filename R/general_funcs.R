@@ -46,6 +46,17 @@ new_report_modal <- function() {
   )
 }
 
+idle_modal <- function() {
+  modalDialog(
+    title = "Still there?",
+    HTML("<p>You've been inactive for a while. This session may disconnect soon if it stays idle &mdash; click below to keep working.</p>"),
+    easyClose = TRUE,
+    footer = tagList(
+      actionButton("stay_active", "I'm still here", class = "btn btn-dark-green")
+    )
+  )
+}
+
 # * Reusable console printer for saved_results -------------------------------
 print_saved_results <- function(df, title = "SAVED RESULTS TABLE") {
   if (is.null(df)) {
@@ -163,64 +174,9 @@ import_draft_file <- function(file_input, session, results,
   updateTextAreaInput(session, "biodiversity_impacts",  value = getOr(ins, "biodiversity_impacts", ""))
   updateTextAreaInput(session, "offset_package",      value = getOr(ins, "offset_package", ""))
   
-  # --- Biodiversity ---
-  updateTextInput(session, "biodiversity_type",        value = getOr(ins, "biodiversity_type", ""))
-  updateTextInput(session, "biodiversity_component",   value = getOr(ins, "biodiversity_component", ""))
-  updateTextInput(session, "biodiversity_attribute",   value = getOr(ins, "biodiversity_attribute", ""))
-  updateTextInput(session, "measurement_unit",         value = getOr(ins, "measurement_unit", ""))
-  updateNumericInput(session, "benchmark_value",       value = getOr(ins, "benchmark_value", 30))
-  updateSelectInput(session,  "distribution",          selected = getOr(ins, "distribution", "Normal"))
-  updateNumericInput(session, "num_simulations",       value = getOr(ins, "num_simulations", 100))
-  
-  # --- Impact ---
-  updateSelectInput(session,  "impact_area_unit",        selected = getOr(ins, "impact_area_unit", "m"))
-  updateNumericInput(session, "impact_area",             value = getOr(ins, "impact_area", 0.35))
-  updateSelectInput(session,  "impact_area_data_type",   selected = getOr(ins, "impact_area_data_type", "Empirical"))
-  updateTextAreaInput(session, "impact_area_empirical_details", value = getOr(ins, "impact_area_empirical_details", ""))
-  updateTextAreaInput(session, "impact_area_modelled_details",  value = getOr(ins, "impact_area_modelled_details", ""))
-  updateTextAreaInput(session, "impact_area_expert_details",    value = getOr(ins, "impact_area_expert_details", ""))
-  updateTextAreaInput(session, "impact_area_proxy_details",     value = getOr(ins, "impact_area_proxy_details", ""))
-  
-  updateNumericInput(session, "mx_prior_impact_mean",    value = getOr(ins, "mx_prior_impact_mean", 30))
-  updateNumericInput(session, "mx_prior_impact_sd",      value = getOr(ins, "mx_prior_impact_sd", 5))
-  updateSelectInput(session,  "prior_impact_sd_data_type", selected = getOr(ins, "prior_impact_sd_data_type", "Empirical"))
-  updateTextAreaInput(session, "prior_impact_sd_empirical_details", value = getOr(ins, "prior_impact_sd_empirical_details", ""))
-  updateTextAreaInput(session, "prior_impact_sd_modelled_details",  value = getOr(ins, "prior_impact_sd_modelled_details", ""))
-  updateTextAreaInput(session, "prior_impact_sd_expert_details",    value = getOr(ins, "prior_impact_sd_expert_details", ""))
-  updateTextAreaInput(session, "prior_impact_sd_proxy_details",     value = getOr(ins, "prior_impact_sd_proxy_details", ""))
-  
-  updateNumericInput(session, "mx_post_impact_mean",     value = getOr(ins, "mx_post_impact_mean", 0))
-  updateNumericInput(session, "mx_post_impact_sd",       value = getOr(ins, "mx_post_impact_sd", 5))
-  
-  updateSelectInput(session,  "post_impact_sd_data_type", selected = getOr(ins, "post_impact_sd_data_type", "Empirical"))
-  updateTextAreaInput(session, "post_impact_sd_empirical_details", value = getOr(ins, "post_impact_sd_empirical_details", ""))
-  updateTextAreaInput(session, "post_impact_sd_modelled_details",  value = getOr(ins, "post_impact_sd_modelled_details", ""))
-  updateTextAreaInput(session, "post_impact_sd_expert_details",    value = getOr(ins, "post_impact_sd_expert_details", ""))
-  updateTextAreaInput(session, "post_impact_sd_proxy_details",     value = getOr(ins, "post_impact_sd_proxy_details", ""))
-  
-  # --- Offset ---
-  updateSelectInput(session,  "offset_area_unit",       selected = getOr(ins, "offset_area_unit", "m"))
-  updateNumericInput(session, "offset_area",             value = getOr(ins, "offset_area", 1))
-  updateNumericInput(session, "mx_prior_offset_mean",    value = getOr(ins, "mx_prior_offset_mean", 0))
-  updateNumericInput(session, "mx_prior_offset_sd",      value = getOr(ins, "mx_prior_offset_sd", 5))
-  updateSelectInput(session,  "prior_offset_sd_data_type", selected = getOr(ins, "prior_offset_sd_data_type", "Empirical"))
-  updateTextAreaInput(session, "prior_offset_sd_empirical_details", value = getOr(ins, "prior_offset_sd_empirical_details", ""))
-  updateTextAreaInput(session, "prior_offset_sd_modelled_details",  value = getOr(ins, "prior_offset_sd_modelled_details", ""))
-  updateTextAreaInput(session, "prior_offset_sd_expert_details",    value = getOr(ins, "prior_offset_sd_expert_details", ""))
-  updateTextAreaInput(session, "prior_offset_sd_proxy_details",     value = getOr(ins, "prior_offset_sd_proxy_details", ""))
-  
-  updateNumericInput(session, "mx_post_offset_mean",     value = getOr(ins, "mx_post_offset_mean", 30))
-  updateNumericInput(session, "mx_post_offset_sd",       value = getOr(ins, "mx_post_offset_sd", 5))
-  
-  updateSelectInput(session,  "selected_confidence",     selected = getOr(ins, "selected_confidence", "Confident 75-90%"))
-  updateTextAreaInput(session, "offset_confidence_justify", value = getOr(ins, "offset_confidence_justify", ""))
-  
-  updateNumericInput(session, "time_till_end",           value = getOr(ins, "time_till_end", 1))
-  updateTextAreaInput(session, "offset_time_till_end_justify", value = getOr(ins, "offset_time_till_end_justify", ""))
-  
-  updateNumericInput(session, "discount_rate",           value = getOr(ins, "discount_rate", 3))
-  updateTextAreaInput(session, "offset_discount_rate_justify", value = getOr(ins, "offset_discount_rate_justify", ""))
-  
+  # --- Biodiversity / Impact / Offset (all Project Calculations fields) ---
+  restore_inputs_from_list(session, ins)
+
   # --- Restore table from draft ---
   if (!is.null(dat$saved_results)) {
     df <- tryCatch(as.data.frame(dat$saved_results, stringsAsFactors = FALSE), error = function(e) NULL)

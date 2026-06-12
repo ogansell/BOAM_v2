@@ -68,11 +68,24 @@ server <- function(input, output, session) {
   })                                                                          
   
   # Perform full browser reload (new session)
-  observeEvent(input$confirm_new, {                                           
-    removeModal()                                                           
-    shinyjs::runjs("location.reload(true);")                                  
-  })                                                                          
- 
+  observeEvent(input$confirm_new, {
+    removeModal()
+    shinyjs::runjs("location.reload(true);")
+  })
+
+  # Idle reminder: show a "still there?" modal after IDLE_MODAL_MIN of inactivity
+  observeEvent(input$idle_warn, {
+    showModal(idle_modal())
+  })
+
+  observeEvent(input$dismiss_idle, {
+    removeModal()
+  })
+
+  observeEvent(input$stay_active, {
+    removeModal()
+  })
+
   #hide the saved results table if there are no rows
   output$saved_rows <- reactive({
     nrow(saved_results())
