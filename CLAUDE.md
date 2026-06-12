@@ -82,8 +82,7 @@ When adding or renaming any input:
 - Update `draft_fields` in `Global.R` if it should be saved/restored
 - Update `numeric_ids` in `Global.R` if it needs numeric validation
 - Update `reset_project_calc_inputs()` in `ui_funcs.R`
-- Update `restore_inputs_from_list()` in `ui_funcs.R`
-- Update `import_draft_file()` in `general_funcs.R`
+- Update `restore_inputs_from_list()` in `ui_funcs.R` — `import_draft_file()` delegates to this for all Project Calculations fields, so it does not need separate updates (see Draft Save/Load)
 
 ---
 
@@ -119,13 +118,21 @@ input$save_and_reset
 - LaTeX engine: **xelatex**; uses custom fonts from `www/` (texgyreheros .otf files)
 - `%` signs in measurement units must be escaped for LaTeX — handled by `has_special_chars()` + `cell_spec(..., escape = TRUE)`
 
+### PDF Rendering on ShinyApps.io — Deployment Requirement
+- ShinyApps.io has **no LaTeX preinstalled**. PDF rendering relies on `rsconnect` bundling a minimal **TinyTeX** alongside the app.
+- `library(tinytex)` must be present in `Global.R` so `rsconnect::deployApp()` detects the LaTeX dependency and bundles it.
+- Required LaTeX packages (pulled in by `report.Rmd`/`preamble.tex`/kableExtra): `fontspec`, `xcolor`, `pdflscape`, `tcolorbox` (+ `pgf`, `environ`, `trimspaces`, `tikzfill`, `pdfcol`), `caption`, `listings`, `multirow`, `wrapfig`, `colortbl`, plus standard kableExtra deps (`booktabs`, `longtable`, `array`, `float`, `tabu`, `threeparttable`, `threeparttablex`, `varwidth`, `ulem`, `makecell`).
+- **Before deploying:** render `report.Rmd` locally at least once (TinyTeX auto-installs any missing packages on first use). This ensures your local TinyTeX has everything `rsconnect` needs to detect and bundle.
+- Watch the `rsconnect::deployApp()` log for TinyTeX bundling — if it's skipped, PDF download will fail on shinyapps.io with a "tex not found"-type error even though it works locally.
+
 ---
 
 ## Draft Save/Load (JSON)
 
 - **Save:** `draft_export` downloadHandler collects all `draft_fields` inputs + `saved_results()` table → JSON
-- **Load:** `import_draft_file()` reads JSON, calls `update*Input()` for every field, restores `saved_results()` and recomputes `summary_results()`
+- **Load:** `import_draft_file()` reads JSON, restores Project Details fields directly, then delegates all Project Calculations fields to `restore_inputs_from_list()` (shared with Edit Mode), restores `saved_results()` and recomputes `summary_results()`
 - Format: `{ inputs: {...}, saved_results: [{...}, ...] }`
+- **Don't duplicate field-restoration logic in `import_draft_file()`** — always route Project Calculations fields through `restore_inputs_from_list()` so it stays in sync with `ui_funcs.R` (a prior duplicated version drifted out of sync and silently dropped ~44 fields on draft load)
 
 ---
 
@@ -154,6 +161,12 @@ When a user clicks "Edit" on a saved row:
 - `clearAllInvalidInputs(ids[])` — removes `.invalid-input` from all listed IDs
 - `addInvalidClass(id)` / `removeInvalidClass(id)` — per-field validation feedback
 - `scrollToBottom` / `scrollToTop` — scroll page after save/edit (handlers in `www/app-hover-behaviour.js`)
+
+**Idle session warning:**
+- `IDLE_MODAL_MIN` (`Global.R`) sets the inactivity timeout in minutes
+- Client-side JS countdown (`ui.R`) sends `idle_warn` after `IDLE_MODAL_MIN` of inactivity, and `dismiss_idle` on the next user activity
+- `server.R` shows `idle_modal()` (`general_funcs.R`) on `idle_warn`, and removes it on `dismiss_idle` / `stay_active`
+- Note: `www/app_working_load_button.R` is a large unused leftover file with its own `IDLE_MODAL_MIN <- 2` — not sourced by the app, don't edit it for this feature
 
 ---
 

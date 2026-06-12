@@ -9,6 +9,7 @@ library(shinyjs)
 library(kableExtra)
 library(stringr)
 library(openxlsx)
+library(tinytex)
 
 source('./R/general_funcs.R')
 source('./R/calculation_funcs.R')
