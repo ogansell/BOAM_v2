@@ -43,6 +43,21 @@ new_report_modal <- function() {
   )
 }
 
+restore_autosave_modal <- function(timestamp) {
+  modalDialog(
+    title = "Resume previous session?",
+    HTML(paste0(
+      "<p>We found an autosaved draft from your last session (", timestamp, ").</p>",
+      "<p>Would you like to restore it?</p>"
+    )),
+    easyClose = FALSE,
+    footer = tagList(
+      actionButton("discard_autosave", "Discard", class = "btn btn-secondary"),
+      actionButton("restore_autosave", "Restore", class = "btn btn-dark-green")
+    )
+  )
+}
+
 idle_modal <- function() {
   modalDialog(
     title = "Still there?",
@@ -148,16 +163,38 @@ print_saved_results <- function(df, title = "SAVED RESULTS TABLE") {
   invisible(df_print)
 }
 
+# Build the JSON-ready payload (inputs + saved_results) used by both the
+# "Save Draft" download and the browser-side autosave.
+build_draft_payload <- function(input, draft_fields, saved_results) {
+  vals <- lapply(draft_fields, function(id) input[[id]])
+  names(vals) <- draft_fields
+  list(
+    inputs = vals,
+    saved_results = saved_results()
+  )
+}
+
 import_draft_file <- function(file_input, session, results,
                               saved_results, summary_results,
                               compute_summary,
                               draw_store = NULL, confidence_levels = NULL) {
-  
+
   req(file_input$datapath)
   txt <- readLines(file_input$datapath, warn = FALSE, encoding = "UTF-8")
   dat <- tryCatch(jsonlite::fromJSON(paste(txt, collapse = "\n")), error = function(e) NULL)
   req(!is.null(dat))
-  
+
+  restore_draft_data(dat, session, results, saved_results, summary_results,
+                     compute_summary, draw_store, confidence_levels)
+}
+
+# Shared restore logic for both "Load Draft" (from file) and autosave
+# restore (from browser localStorage), once `dat` has been parsed into a list.
+restore_draft_data <- function(dat, session, results,
+                               saved_results, summary_results,
+                               compute_summary,
+                               draw_store = NULL, confidence_levels = NULL) {
+
   getOr <- function(x, nm, default = NULL) if (!is.null(x[[nm]])) x[[nm]] else default
   ins <- if (is.null(dat$inputs)) list() else dat$inputs  # nil guard
   
@@ -176,7 +213,29 @@ import_draft_file <- function(file_input, session, results,
 
   # --- Restore table from draft ---
   if (!is.null(dat$saved_results)) {
-    df <- tryCatch(as.data.frame(dat$saved_results, stringsAsFactors = FALSE), error = function(e) NULL)
+    # dat$saved_results may already be a data.frame (file-based import, via
+    # jsonlite::fromJSON of a row-records array) or a columnar list
+    # ({"col": [val], ...} - what Shiny produces serializing a 1-row
+    # data.frame via sendCustomMessage, received here as autosave_check).
+    # Normalize the columnar case into a data.frame column-by-column.
+    df <- tryCatch({
+      sr <- dat$saved_results
+      if (is.data.frame(sr)) {
+        sr
+      } else if (is.list(sr) && length(sr) > 0) {
+        sr <- lapply(sr, function(col) {
+          if (is.list(col)) {
+            col <- lapply(col, function(v) if (is.null(v) || length(v) == 0) NA else v)
+            col <- unlist(col)
+          }
+          col
+        })
+        as.data.frame(sr, stringsAsFactors = FALSE)
+      } else {
+        NULL
+      }
+    }, error = function(e) NULL)
+    if (!is.null(df) && !is.data.frame(df)) df <- NULL
     if (!is.null(df)) {
       saved_results(df)                                 # update backend table
       # Repopulate draw_store by re-simulating each saved row

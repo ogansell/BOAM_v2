@@ -49,6 +49,48 @@ ui <- fluidPage(
   });
 ")),
 
+  # Autosave: persist a draft to browser localStorage after each completed
+  # attribute, and offer to restore it if found on the next page load.
+  tags$script(HTML("
+  (function(){
+    var AUTOSAVE_KEY = 'boam_autosave_draft';
+
+    Shiny.addCustomMessageHandler('autosaveDraft', function(payload) {
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
+          data: payload,
+          ts: new Date().toLocaleString()
+        }));
+      } catch (e) {}
+    });
+
+    Shiny.addCustomMessageHandler('clearAutosave', function(msg) {
+      try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+    });
+
+    function checkAutosave() {
+      try {
+        var raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (raw) {
+          Shiny.setInputValue('autosave_check', JSON.parse(raw), {priority: 'event'});
+        }
+      } catch (e) {}
+    }
+
+    // On a local/fast connection 'shiny:connected' can fire before this
+    // script runs and registers the listener, so poll for the socket
+    // becoming ready as a fallback.
+    $(document).on('shiny:connected', checkAutosave);
+    (function pollConnected() {
+      if (window.Shiny && Shiny.shinyapp && Shiny.shinyapp.$socket && Shiny.shinyapp.$socket.readyState === 1) {
+        checkAutosave();
+      } else {
+        setTimeout(pollConnected, 50);
+      }
+    })();
+  })();
+")),
+
   tags$script(HTML(sprintf("
     // sandbox-style config (seconds). We set both to the same so warn == show.
     window.APP_CFG = { IDLE_LIMIT_SEC: %d, IDLE_WARN_AT_SEC: %d };

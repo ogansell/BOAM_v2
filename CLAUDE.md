@@ -133,6 +133,17 @@ input$save_and_reset
 - **Load:** `import_draft_file()` reads JSON, restores Project Details fields directly, then delegates all Project Calculations fields to `restore_inputs_from_list()` (shared with Edit Mode), restores `saved_results()` and recomputes `summary_results()`
 - Format: `{ inputs: {...}, saved_results: [{...}, ...] }`
 - **Don't duplicate field-restoration logic in `import_draft_file()`** — always route Project Calculations fields through `restore_inputs_from_list()` so it stays in sync with `ui_funcs.R` (a prior duplicated version drifted out of sync and silently dropped ~44 fields on draft load)
+- `build_draft_payload()` (`general_funcs.R`) builds the shared `{ inputs: {...}, saved_results: [...] }` payload used by both `draft_export` and the autosave feature below
+- `restore_draft_data()` (`general_funcs.R`) is the shared restore logic (used by both `import_draft_file()` and autosave restore) — `import_draft_file()` is now a thin wrapper that reads/parses the uploaded JSON file then calls `restore_draft_data()`
+
+### Autosave (browser localStorage)
+
+- After every `input$save_and_reset` (i.e. each time a biodiversity attribute is completed and saved), the server builds the draft payload via `build_draft_payload()` and sends it to the client via `session$sendCustomMessage("autosaveDraft", payload)`
+- Client-side handler (`ui.R`) stores it in `localStorage` under `boam_autosave_draft`, along with a timestamp — this survives a server-side session timeout/crash since it lives in the browser, not the R process
+- On page load (`shiny:connected`), the client checks `localStorage` for an autosave and sends it to the server as `input$autosave_check`; if found, `restore_autosave_modal()` asks the user whether to restore it
+- `input$restore_autosave` → `restore_draft_data()` repopulates the session from the autosaved payload; `input$discard_autosave` clears it
+- Starting a new report (`confirm_new`) clears the autosave via `session$sendCustomMessage("clearAutosave", list())`
+- This is a workaround for the underlying ShinyApps.io idle-timeout issue, not a fix for it — it just means in-progress work isn't lost when the session disconnects
 
 ---
 

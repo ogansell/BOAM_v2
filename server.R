@@ -70,7 +70,38 @@ server <- function(input, output, session) {
   # Perform full browser reload (new session)
   observeEvent(input$confirm_new, {
     removeModal()
+    session$sendCustomMessage("clearAutosave", list())
     shinyjs::runjs("location.reload(true);")
+  })
+
+  # * autosave (browser localStorage) --------------------------------------
+
+  autosave_data <- reactiveVal(NULL)
+
+  # On page load, the client checks localStorage for an autosaved draft
+  # and reports it here so we can offer to restore it.
+  observeEvent(input$autosave_check, {
+    found <- input$autosave_check
+    if (!is.null(found) && !is.null(found$data)) {
+      autosave_data(found$data)
+      showModal(restore_autosave_modal(found$ts))
+    }
+  }, once = TRUE)
+
+  observeEvent(input$restore_autosave, {
+    removeModal()
+    dat <- autosave_data()
+    if (!is.null(dat)) {
+      restore_draft_data(dat, session, results, saved_results, summary_results,
+                         compute_summary, draw_store, confidence_levels)
+    }
+    autosave_data(NULL)
+  })
+
+  observeEvent(input$discard_autosave, {
+    removeModal()
+    session$sendCustomMessage("clearAutosave", list())
+    autosave_data(NULL)
   })
 
   # Idle reminder: show a "still there?" modal after IDLE_MODAL_MIN of inactivity
@@ -117,6 +148,10 @@ server <- function(input, output, session) {
       saved_results, editing, edit_row_idx,
       summary_results, session, draw_store
     )
+
+    # Autosave the draft to browser localStorage after each completed attribute
+    payload <- build_draft_payload(input, draft_fields, saved_results)
+    session$sendCustomMessage("autosaveDraft", payload)
   })
   
   # * model output summary ----------------------------------------------------------
@@ -266,12 +301,7 @@ server <- function(input, output, session) {
       paste0("biodiversity_draft_", format(Sys.time(), "%Y-%m-%d_%H-%M-%S"), ".json")
     },
     content = function(file) {
-      vals <- lapply(draft_fields, function(id) input[[id]])
-      names(vals) <- draft_fields
-      payload <- list(
-        inputs = vals,
-        saved_results = saved_results()  # <- your variable-length table
-      )
+      payload <- build_draft_payload(input, draft_fields, saved_results)
       writeLines(jsonlite::toJSON(payload, pretty = TRUE, auto_unbox = TRUE, na = "null"), file, useBytes = TRUE)
     }
   )
