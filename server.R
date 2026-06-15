@@ -2,9 +2,6 @@
 # Server ------------------------------------------------------------------
 server <- function(input, output, session) {
   
-  # 'about' modal popup 
-  show_startup_modal()
-  
   # start buttons disabld
   disable("save_and_reset")
 
@@ -63,11 +60,7 @@ server <- function(input, output, session) {
   output$prior_offset_shelf_derived  <- render_shelf_display("prior_offset_p_low",  "prior_offset_p50",  "prior_offset_p_high",  "prior_offset_ci_level")
   output$post_offset_shelf_derived   <- render_shelf_display("post_offset_p_low",   "post_offset_p50",   "post_offset_p_high",   "post_offset_ci_level")
 
-  observeEvent(input$help_btn, {
-    shinyjs::toggle("help_text", anim = TRUE, animType = "slide")
-  })
-  
-  # New report confirm modal  
+  # New report confirm modal
   observeEvent(input$new_report_btn, {                                       
     showModal(new_report_modal())
   })                                                                          

@@ -39,9 +39,9 @@ R/                     # Source directory (general_funcs.R, calculation_funcs.R,
 - Area is applied as a **deterministic multiplier** after simulation, not embedded in draws
 
 ### Component-Level Aggregation
-- `compute_summary()` aggregates attribute rows to component level using **inverse-variance weighting** (IVW) on the stored P5/P95 values
+- `compute_summary()` aggregates attribute rows to component level using **equal-weight pooling of raw draws**: for each component, the per-attribute draw vectors from `draw_store` are stacked and `colMeans()`'d to form a component-level distribution, then empirical Mean/P5/P95 are taken from that — no inverse-variance weighting, no Normality assumption, asymmetry preserved
+- **Fallback:** if `draw_store` is missing entries for any row in a component (e.g. report render before re-simulation after a draft import), `compute_summary()` falls back to a simple unweighted mean of each attribute's stored Mean/P5/P95
 - `compute_summary_df()` is the display version (adds HTML formatting); `compute_summary()` is the clean data version used in the report
-- **Known issue:** IVW at the summary layer is a legacy approach — the preferred method is equal-weight pooling of raw draws via `draw_store`, but this is not yet fully implemented at the component level
 
 ### Distributions Supported
 | Distribution | User inputs | Internal param derivation |

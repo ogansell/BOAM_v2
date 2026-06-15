@@ -177,7 +177,149 @@ ui <- fluidPage(
   ,
 
   div(class = "container-fluid",
-      tabsetPanel(id = "main_tabs",
+      tabsetPanel(id = "main_tabs", selected = "About this model",
+
+                  # * About UI ------------------------------------------------------
+                  tabPanel(
+                    "About this model",
+                    div(
+                      class = "form-section",
+
+                      HTML("
+                        <p>This net gain model evaluates offset proposals for ecological equivalence and net gain across biodiversity type, amount, and time, based on user inputs, and can be used to simulate numerous biodiversity offset scenarios to compare predicted outcomes.</p>
+
+                        <p>The model uses Net Present Biodiversity Value (NPBV) to indicate predicted outcomes from offset proposals, coupled with prediction intervals to describe certainty associated with the model outputs.</p>
+
+                        <p>The NPBV does not quantify predicted net gain outcomes. Outputs from this model should be further interpreted to meaningful ecological 'on-the-ground' measures to support quantified (e.g., 10%) net gain claims.</p>
+
+                        <p><strong>The system will time out after 120 minutes of inactivity.</strong></p>
+                        <p><strong>Use the Save Draft feature regularly to ensure work is not lost.</strong></p>
+
+                        <p>For assistance and questions please contact:<br>
+                        Jane Doe<br>
+                        <a href='mailto:jane.doe@example.com'>jane.doe@example.com</a><br>
+                        Phone: +64 21 123 4567</p>
+                      "),
+
+                      tags$img(
+                        src = "custom/Screenshot 2025-10-14 at 6.40.52 PM.png",
+                        style = "max-width: 100%; height: auto; margin-top: 15px;"
+                      ),
+
+                      tags$br(), tags$br(),
+
+                      tags$h4("How uncertainty is calculated in this model"),
+
+                      tags$p("The original BOAM model is deterministic and uses single point values to describe biodiversity values at the impact and offset sites—one number in,
+                             one number out. This revised model makes uncertainty explicit by using a Monte Carlo simulation framework to propagate
+                             uncertainty through all stages of the offset calculation."),
+
+                      tags$p("For each biodiversity attribute, the model takes the user’s inputs describing central tendency and uncertainty
+                      (for example, a mean and a measure of spread such as standard deviation, sample size,
+                      or an expert-elicited range) and generates 10,000 plausible values from an appropriate
+                      statistical distribution constrained by ecological bounds. This is done independently for all four measurement points:
+                             prior to impact, post impact, prior to offset, and post offset."),
+
+                      tags$p("These simulated values are then carried through the full Net Present Biodiversity Value (NPBV) calculation - including benchmark scaling,
+                             area weighting, confidence adjustment, and time discounting - producing 10,000 plausible NPBV outcomes for each attribute.
+                             In this way, uncertainty in the inputs is consistently propagated through the entire model,
+                             rather than being applied only to the final result."),
+
+                      tags$p("From the resulting distribution of 10,000 outcomes,
+                             the model reports three summary statistics:"),
+                      tags$ul(
+                        tags$li(tags$strong("Mean"), " — the central estimate of the NPBV."),
+                        tags$li(tags$strong("5th percentile (P5)"), " — a pessimistic but plausible scenario,
+                                representing the lower boundary below which only 5% of simulated outcomes fall."),
+                        tags$li(tags$strong("95th percentile (P95)"), " — an optimistic but plausible scenario,
+                                representing the upper boundary above which only 5% of simulated outcomes fall.")
+                      ),
+
+                      tags$p("Together, the P5 and P95 bounds define a 90% prediction interval - the range within which the
+                             true NPBV is expected to fall with 90% probability, given the input assumptions.
+                             Unlike traditional confidence intervals, these bounds are not constrained to be symmetric,
+                             honestly reflecting the true shape of the underlying uncertainty in the model inputs and transformations."),
+
+                      tags$p("At the component level, the model aggregates the attribute-level simulation results using equal weighting,
+                             consistent with the BOAM framework’s disaggregated currency and its emphasis on like-for-like exchanges,
+                             transparency, and the avoidance of implicit value weighting. For each of the 10,000 simulation runs,
+                             the attribute-level NPBV values within a component are averaged to produce a single component-level NPBV.
+                             The component-level mean, P5, and P95 are then derived from the resulting distribution of 10,000 component scores."),
+
+                      tags$p("A negative P5 at either the attribute or component level indicates that there is a meaningful probability (at least 5%)
+                             that the proposed offset will fail to achieve no net loss for that element of biodiversity, given the stated assumptions.
+                             These cases are highlighted in red throughout the model outputs to clearly signal residual risk,
+                             even where the mean outcome may be neutral or positive. Similarly, a positive mean NPBV with a 90% prediction interval that
+                             includes zero indicates that the proposed offset may only achieve no net loss, thereby failing to guarantee a net gain outcome."),
+
+                      tags$h4("Choosing a distribution: which one fits your data?"),
+
+                      tags$p("The model offers a few different ways of describing the uncertainty in a measurement,
+                             depending on how that measurement was collected. Choosing the option that matches
+                             how the data was gathered helps the model represent uncertainty realistically."),
+
+                      tags$ul(
+                        tags$li(
+                          tags$strong("Normal — for measurements with a typical value and a spread either side. "),
+                          "Use this when your value is a continuous measurement (e.g. percentage cover, an index score,
+                           a density estimate) and you have a sense of both the average and how much it tends to vary —
+                           for example, from repeat plots or survey rounds. You provide the average (mean) and a measure
+                           of how spread out the values are (standard deviation)."
+                        ),
+                        tags$li(
+                          tags$strong("Poisson — for counts of things. "),
+                          "Use this when your data is a count — number of individuals, nests, burrows, sightings,
+                           or similar — collected across a number of survey plots, transects, or visits. You provide
+                           the average count and the number of plots/visits the count is based on. The model uses this
+                           to work out how reliable that average count is likely to be: counts based on more plots are
+                           treated as more certain than counts based on just a few."
+                        ),
+                        tags$li(
+                          tags$strong("Negative Binomial — for counts that are more variable than usual. "),
+                          "Some count data is 'patchy' — most plots have few or none, but occasionally a plot has a lot
+                           more (e.g. species that occur in clumps or colonies). If your counts vary more than you'd
+                           expect from a simple average (the variance is clearly bigger than the mean), this option
+                           better reflects that extra variability. You provide the average count and the observed
+                           variance across your sample."
+                        ),
+                        tags$li(
+                          tags$strong("Expert elicited — for values based on professional judgement rather than direct measurement. "),
+                          "Use this when there isn't enough direct survey data to calculate a mean and spread, and the
+                           value instead relies on the judgement of an experienced ecologist or other expert. Rather
+                           than a mean and standard deviation, you provide three values: a realistic low estimate,
+                           a most likely (central) estimate, and a realistic high estimate, along with how confident
+                           the expert is that the true value falls between the low and high estimates (e.g. 90%
+                           confident). The model converts these into an equivalent average and spread, and always
+                           treats expert-elicited values as following a typical bell-curve pattern of uncertainty."
+                        )
+                      ),
+
+                      tags$p("If you're unsure which option applies, ask: ", tags$em("was this a direct count from survey
+                             plots, a continuous measurement with known variability, or a best estimate from an expert
+                             because direct data wasn't available?"), " That will usually point to the right choice.")
+                    )
+                  ),
+
+                  # * How to use this model UI ------------------------------------------------------
+                  tabPanel(
+                    "How to use this model",
+                    div(
+                      class = "form-section",
+                      HTML("
+      <ol>
+        <li>Enter Biodiversity Type</li>
+        <li>Enter a Biodiversity Component</li>
+        <li>Enter a Biodiversity Attribute</li>
+        <li>Enter all remaining data associated with that Biodiversity Attribute</li>
+        <li>Click on <strong>'Run Simulations'</strong></li>
+        <li>Click on <strong>'Save to Report & Reset'</strong></li>
+        <li>Repeat steps 3–6 for all additional attributes</li>
+        <li>Repeat steps 2–7 for all additional Biodiversity Components</li>
+        <li>Repeat steps 1–8 for additional Biodiversity Types</li>
+      </ol>
+    ")
+                    )
+                  ),
 
                   # * Project Details UI ------------------------------------------------------
 
@@ -207,36 +349,10 @@ ui <- fluidPage(
 
                   tabPanel("Project Calculations",
 
-                           # __Project calc primer button -----------------------------------------------
-
-
-                           div(
-                             style = "margin: 10px 0;",  # 15px top and bottom margin
-                             actionButton(
-                               "help_btn",
-                               "How to use this model",
-                               icon = icon("circle-info"),
-                               class = "btn-secondary"
-                             ),
-                             tags$br(),
-                             hidden(div(
-                               id = "help_text",
-                               style = "border-left: 4px solid #0d6efd; padding: 10px; margin-top: 10px;",
-                               HTML("
-      <ol>
-        <li>Enter Biodiversity Type</li>
-        <li>Enter a Biodiversity Component</li>
-        <li>Enter a Biodiversity Attribute</li>
-        <li>Enter all remaining data associated with that Biodiversity Attribute</li>
-        <li>Click on <strong>'Run Simulations'</strong></li>
-        <li>Click on <strong>'Save to Report & Reset'</strong></li>
-        <li>Repeat steps 3–6 for all additional attributes</li>
-        <li>Repeat steps 2–7 for all additional Biodiversity Components</li>
-        <li>Repeat steps 1–8 for additional Biodiversity Types</li>
-      </ol>
-    ")
-                             ))
-                           ),
+                           # __Required field legend ------------------------------------------------
+                           tags$p(style = "font-size: 0.85em; color: #555; margin: 6px 0 0;",
+                                  tags$span(" *", style = "color:#c62828; font-weight:bold;"),
+                                  " indicates a required field"),
 
                            # __Excel Upload / Template ------------------------------------------------
                            div(
@@ -259,12 +375,12 @@ ui <- fluidPage(
                            div(class = "colored-box red-box form-section-box",
                                div(class = "box-header", "Biodiversity"),
                                div(class = "compact-grid",
-                                   div(class = "input-block", tags$label("Biodiversity Type", `for` = "biodiversity_type"), textInput("biodiversity_type", label = NULL, value = "")),
-                                   div(class = "input-block", tags$label("Biodiversity Component", `for` = "biodiversity_component"), textInput("biodiversity_component", label = NULL, value = "")),
-                                   div(class = "input-block", tags$label("Biodiversity Attribute", `for` = "biodiversity_attribute"), textInput("biodiversity_attribute", label = NULL, value = "")),
-                                   div(class = "input-block", tags$label("Measurement Unit", `for` = "measurement_unit"), textInput("measurement_unit", label = NULL, value = "")),
-                                   div(class = "input-block", tags$label("Benchmark Value"), numericInput("benchmark_value", label = NULL, value = NULL, width = "100%")),
-                                   div(class = "input-block", tags$label("Statistical Distribution"), selectInput("distribution", label = NULL, choices = c("","Normal", "Poisson", "Negative Binomial"), selected = NULL, width = "100%")),
+                                   div(class = "input-block", req_label("Biodiversity Type", `for` = "biodiversity_type"), textInput("biodiversity_type", label = NULL, value = "")),
+                                   div(class = "input-block", req_label("Biodiversity Component", `for` = "biodiversity_component"), textInput("biodiversity_component", label = NULL, value = "")),
+                                   div(class = "input-block", req_label("Biodiversity Attribute", `for` = "biodiversity_attribute"), textInput("biodiversity_attribute", label = NULL, value = "")),
+                                   div(class = "input-block", req_label("Measurement Unit", `for` = "measurement_unit"), textInput("measurement_unit", label = NULL, value = "")),
+                                   div(class = "input-block", req_label("Benchmark Value"), numericInput("benchmark_value", label = NULL, value = NULL, width = "100%")),
+                                   div(class = "input-block", req_label("Statistical Distribution"), selectInput("distribution", label = NULL, choices = c("","Normal", "Poisson", "Negative Binomial"), selected = NULL, width = "100%")),
                                    # Distribution hint panel
                                    conditionalPanel(
                                      condition = "input.distribution == 'Poisson'",
@@ -291,18 +407,18 @@ ui <- fluidPage(
 
                                        # Impact Area (always start on a new row)
                                        div(class = "input-block row-start",  # Impact Area
-                                           tags$label("Impact Area"),
+                                           req_label("Impact Area"),
                                            numericInput("impact_area", label = NULL, value = "", width = "100%")
                                        ),
                                        # Impact Area Unit
                                        div(class = "input-block",
-                                           tags$label("Impact Area Measurement Unit"),
+                                           req_label("Impact Area Measurement Unit"),
                                            selectInput("impact_area_unit", label = NULL, choices = c("","km","m","ha","m²"), width = "100%")
                                        ),
 
                                        # Impact Area Data Type + conditionals (always start on a new row)
                                        div(class = "input-block  row-start",
-                                           tags$label("Attribute Measure Data Type"),
+                                           req_label("Attribute Measure Data Type"),
                                            selectInput("impact_area_data_type", label = NULL,
                                                        choices = c("","Empirical", "Modelled", "Expert elicited", "Proxy value"),
                                                        width = "100%")),
@@ -351,7 +467,7 @@ ui <- fluidPage(
                                        ),
                                        # ── Prior Impact measurement ───────────────────────────────────────────
                                        div(class = "input-block row-start",
-                                           tags$label("Prior Impact — Data Type"),
+                                           req_label("Prior Impact — Data Type"),
                                            selectInput("prior_impact_data_type", label = NULL,
                                                        choices = c("","Empirical","Modelled","Expert elicited","Proxy value"),
                                                        width = "100%")
@@ -373,25 +489,25 @@ ui <- fluidPage(
                                        conditionalPanel(
                                          condition = "input.prior_impact_data_type != 'Expert elicited'",
                                          div(class = "input-block row-start",
-                                             tags$label("Mean Attribute Measure Prior To Impact"),
+                                             req_label("Mean Attribute Measure Prior To Impact"),
                                              numericInput("mx_prior_impact_mean", label = NULL, value = "", width = "100%")
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Normal' || input.distribution == ''",
                                            div(class = "input-block",
-                                               tags$label("SD Prior Impact"),
+                                               req_label("SD Prior Impact"),
                                                numericInput("mx_prior_impact_sd", label = NULL, value = "", width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Poisson'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Sample Size Prior to Impact <small><em>(n — MoM: SD=&radic;&lambda;/&radic;n)</em></small>")),
+                                               req_label(HTML("Sample Size Prior to Impact <small><em>(n — MoM: SD=&radic;&lambda;/&radic;n)</em></small>")),
                                                numericInput("impact_sample_size_prior", label = NULL, value = "", min = 1, step = 1, width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Negative Binomial'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Variance Prior to Impact <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
+                                               req_label(HTML("Variance Prior to Impact <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
                                                numericInput("mx_prior_impact_var", label = NULL, value = "", min = 0, step = 0.1, width = "100%"))
                                          )
                                        ),
@@ -422,7 +538,7 @@ ui <- fluidPage(
 
                                        # ── Post Impact measurement ────────────────────────────────────────────
                                        div(class = "input-block row-start",
-                                           tags$label("Post Impact — Data Type"),
+                                           req_label("Post Impact — Data Type"),
                                            selectInput("post_impact_data_type", label = NULL,
                                                        choices = c("","Empirical","Modelled","Expert elicited","Proxy value"),
                                                        width = "100%")
@@ -442,25 +558,25 @@ ui <- fluidPage(
                                        conditionalPanel(
                                          condition = "input.post_impact_data_type != 'Expert elicited'",
                                          div(class = "input-block row-start",
-                                             tags$label("Mean Attribute Measure Post Impact"),
+                                             req_label("Mean Attribute Measure Post Impact"),
                                              numericInput("mx_post_impact_mean", label = NULL, value = "", width = "100%")
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Normal' || input.distribution == ''",
                                            div(class = "input-block",
-                                               tags$label("SD Post Impact"),
+                                               req_label("SD Post Impact"),
                                                numericInput("mx_post_impact_sd", label = NULL, value = "", width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Poisson'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Sample Size Post Impact <small><em>(n)</em></small>")),
+                                               req_label(HTML("Sample Size Post Impact <small><em>(n)</em></small>")),
                                                numericInput("impact_sample_size_post", label = NULL, value = "", min = 1, step = 1, width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Negative Binomial'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Variance Post Impact <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
+                                               req_label(HTML("Variance Post Impact <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
                                                numericInput("mx_post_impact_var", label = NULL, value = "", min = 0, step = 0.1, width = "100%"))
                                          )
                                        ),
@@ -494,11 +610,11 @@ ui <- fluidPage(
                                div(class = "colored-box purple-box form-section-box",
                                    div(class = "box-header", "Offset Site"),
                                    div(class = "compact-grid offset-grid",
-                                       div(class = "input-block", tags$label("Offset Area"), numericInput("offset_area", label = NULL, value = "", width = "100%")),
-                                       div(class = "input-block", tags$label("Offset Area Unit"), selectInput("offset_area_unit", label = NULL, choices = c("","km","m", "ha", "m²"), width = "100%")),
+                                       div(class = "input-block", req_label("Offset Area"), numericInput("offset_area", label = NULL, value = "", width = "100%")),
+                                       div(class = "input-block", req_label("Offset Area Unit"), selectInput("offset_area_unit", label = NULL, choices = c("","km","m", "ha", "m²"), width = "100%")),
                                        # ── Prior Offset measurement ───────────────────────────────────────────
                                        div(class = "input-block row-start",
-                                           tags$label("Prior Offset — Data Type"),
+                                           req_label("Prior Offset — Data Type"),
                                            selectInput("prior_offset_data_type", label = NULL,
                                                        choices = c("","Empirical","Modelled","Expert elicited","Proxy value"),
                                                        width = "100%")
@@ -518,25 +634,25 @@ ui <- fluidPage(
                                        conditionalPanel(
                                          condition = "input.prior_offset_data_type != 'Expert elicited'",
                                          div(class = "input-block row-start",
-                                             tags$label("Mean Attribute Measure Prior To Offset"),
+                                             req_label("Mean Attribute Measure Prior To Offset"),
                                              numericInput("mx_prior_offset_mean", label = NULL, value = "", width = "100%")
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Normal' || input.distribution == ''",
                                            div(class = "input-block",
-                                               tags$label("SD Prior Offset"),
+                                               req_label("SD Prior Offset"),
                                                numericInput("mx_prior_offset_sd", label = NULL, value = "", width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Poisson'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Sample Size Prior to Offset <small><em>(n — MoM: SD=&radic;&lambda;/&radic;n)</em></small>")),
+                                               req_label(HTML("Sample Size Prior to Offset <small><em>(n — MoM: SD=&radic;&lambda;/&radic;n)</em></small>")),
                                                numericInput("offset_sample_size_prior", label = NULL, value = "", min = 1, step = 1, width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Negative Binomial'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Variance Prior to Offset <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
+                                               req_label(HTML("Variance Prior to Offset <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
                                                numericInput("mx_prior_offset_var", label = NULL, value = "", min = 0, step = 0.1, width = "100%"))
                                          )
                                        ),
@@ -566,7 +682,7 @@ ui <- fluidPage(
 
                                        # ── Post Offset measurement ────────────────────────────────────────────
                                        div(class = "input-block row-start",
-                                           tags$label("Post Offset — Data Type"),
+                                           req_label("Post Offset — Data Type"),
                                            selectInput("post_offset_data_type", label = NULL,
                                                        choices = c("","Empirical","Modelled","Expert elicited","Proxy value"),
                                                        width = "100%")
@@ -586,25 +702,25 @@ ui <- fluidPage(
                                        conditionalPanel(
                                          condition = "input.post_offset_data_type != 'Expert elicited'",
                                          div(class = "input-block row-start",
-                                             tags$label("Mean Attribute Measure Post Offset"),
+                                             req_label("Mean Attribute Measure Post Offset"),
                                              numericInput("mx_post_offset_mean", label = NULL, value = "", width = "100%")
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Normal' || input.distribution == ''",
                                            div(class = "input-block",
-                                               tags$label("SD Post Offset"),
+                                               req_label("SD Post Offset"),
                                                numericInput("mx_post_offset_sd", label = NULL, value = "", width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Poisson'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Sample Size Post Offset <small><em>(n)</em></small>")),
+                                               req_label(HTML("Sample Size Post Offset <small><em>(n)</em></small>")),
                                                numericInput("offset_sample_size_post", label = NULL, value = "", min = 1, step = 1, width = "100%"))
                                          ),
                                          conditionalPanel(
                                            condition = "input.distribution == 'Negative Binomial'",
                                            div(class = "input-block",
-                                               tags$label(HTML("Variance Post Offset <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
+                                               req_label(HTML("Variance Post Offset <small><em>(must be &gt; mean; k derived as &mu;&sup2;/(s&sup2;&minus;&mu;))</em></small>")),
                                                numericInput("mx_post_offset_var", label = NULL, value = "", min = 0, step = 0.1, width = "100%"))
                                          )
                                        ),
@@ -633,7 +749,7 @@ ui <- fluidPage(
                                        ),
                                        # Pairs that should share a row in 3-col mode
                                        div(class = "input-block conf-level",
-                                           tags$label("Confidence in Proposed Offset Action", `for` = "selected_confidence"),
+                                           req_label("Confidence in Proposed Offset Action", `for` = "selected_confidence"),
                                            selectInput("selected_confidence", label = NULL, choices = confidence_levels$levels, selected = "")
                                        ),
                                        div(class = "input-block conf-justify",
@@ -641,7 +757,7 @@ ui <- fluidPage(
                                        ),
 
                                        div(class = "input-block end-time",
-                                           tags$label("Time till End (Years)"),
+                                           req_label("Time till End (Years)"),
                                            numericInput("time_till_end", label = NULL, value = "", width = "100%")
                                        ),
                                        div(class = "input-block end-time-justify",
@@ -649,7 +765,7 @@ ui <- fluidPage(
                                        ),
 
                                        div(class = "input-block discount-rate",
-                                           tags$label("Discount Rate (%)"),
+                                           req_label("Discount Rate (%)"),
                                            numericInput("discount_rate", label = NULL, value = "", width = "100%", step = 0.1)
                                        ),
                                        div(class = "input-block discount-justify",
@@ -708,66 +824,6 @@ ui <- fluidPage(
                                tags$br(), tags$br(), tags$br()
                            )
                   ),
-
-                  # * About UI ------------------------------------------------------
-                  tabPanel(
-                    "About",
-                    div(
-                      class = "form-section",
-                      tags$img(
-                        src = "custom/Screenshot 2025-10-14 at 6.40.52 PM.png",
-                        style = "max-width: 100%; height: auto; margin-top: 15px;"
-                      ),
-
-                      tags$br(), tags$br(),
-
-                      tags$h4("How uncertainty is calculated in this model"),
-
-                      tags$p("The original BOAM model is deterministic and uses single point values to describe biodiversity values at the impact and offset sites—one number in, 
-                             one number out. This revised model makes uncertainty explicit by using a Monte Carlo simulation framework to propagate 
-                             uncertainty through all stages of the offset calculation."),
-
-                      tags$p("For each biodiversity attribute, the model takes the user’s inputs describing central tendency and uncertainty 
-                      (for example, a mean and a measure of spread such as standard deviation, sample size, 
-                      or an expert-elicited range) and generates 10,000 plausible values from an appropriate 
-                      statistical distribution constrained by ecological bounds. This is done independently for all four measurement points: 
-                             prior to impact, post impact, prior to offset, and post offset."),
-                      
-                      tags$p("These simulated values are then carried through the full Net Present Biodiversity Value (NPBV) calculation - including benchmark scaling, 
-                             area weighting, confidence adjustment, and time discounting - producing 10,000 plausible NPBV outcomes for each attribute. 
-                             In this way, uncertainty in the inputs is consistently propagated through the entire model, 
-                             rather than being applied only to the final result."),
-
-                      tags$p("From the resulting distribution of 10,000 outcomes, 
-                             the model reports three summary statistics:"),
-                      tags$ul(
-                        tags$li(tags$strong("Mean"), " \u2014 the central estimate of the NPBV."),
-                        tags$li(tags$strong("5th percentile (P5)"), " \u2014 a pessimistic but plausible scenario, 
-                                representing the lower boundary below which only 5% of simulated outcomes fall."),
-                        tags$li(tags$strong("95th percentile (P95)"), " \u2014 an optimistic but plausible scenario, 
-                                representing the upper boundary above which only 5% of simulated outcomes fall.")
-                      ),
-
-                      tags$p("Together, the P5 and P95 bounds define a 90% prediction interval - the range within which the 
-                             true NPBV is expected to fall with 90% probability, given the input assumptions. 
-                             Unlike traditional confidence intervals, these bounds are not constrained to be symmetric, 
-                             honestly reflecting the true shape of the underlying uncertainty in the model inputs and transformations."),
-
-                      tags$p("At the component level, the model aggregates the attribute-level simulation results using equal weighting, 
-                             consistent with the BOAM framework’s disaggregated currency and its emphasis on like-for-like exchanges, 
-                             transparency, and the avoidance of implicit value weighting. For each of the 10,000 simulation runs, 
-                             the attribute-level NPBV values within a component are averaged to produce a single component-level NPBV.
-                             The component-level mean, P5, and P95 are then derived from the resulting distribution of 10,000 component scores."),
-
-                      tags$p("A negative P5 at either the attribute or component level indicates that there is a meaningful probability (at least 5%) 
-                             that the proposed offset will fail to achieve no net loss for that element of biodiversity, given the stated assumptions. 
-                             These cases are highlighted in red throughout the model outputs to clearly signal residual risk, 
-                             even where the mean outcome may be neutral or positive. Similarly, a positive mean NPBV with a 90% prediction interval that 
-                             includes zero indicates that the proposed offset may only achieve no net loss, thereby failing to guarantee a net gain outcome.")
-                    )
-                  )
-
-
       )
   )
 )

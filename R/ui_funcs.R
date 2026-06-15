@@ -1,4 +1,9 @@
 
+# Label helper: appends a red asterisk to mark a required field
+req_label <- function(...) {
+  tags$label(..., tags$span(" *", style = "color:#c62828; font-weight:bold;"))
+}
+
 # Reset ALL inputs on the "Project Calculations" tab to their initial defaults
 reset_project_calc_inputs <- function(session) {
   # --- Biodiversity ---
