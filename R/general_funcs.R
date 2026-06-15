@@ -343,26 +343,34 @@ edit_saved_row <- function(row, session, numeric_ids, saved_results,
 
 # ── Column label-to-ID mappings for each sheet ───────────────────────────────
 
+xlsx_biodiversity_columns <- function() {
+  c(
+    "biodiversity_type"      = "Biodiversity Type",
+    "biodiversity_component" = "Biodiversity Component",
+    "biodiversity_attribute" = "Biodiversity Attribute",
+    "measurement_unit"       = "Measurement Unit",
+    "benchmark_value"        = "Benchmark Value",
+    "distribution"           = "Statistical Distribution"
+  )
+}
+
 xlsx_impact_columns <- function() {
   c(
     "biodiversity_type"        = "Biodiversity Type",
     "biodiversity_component"   = "Biodiversity Component",
     "biodiversity_attribute"   = "Biodiversity Attribute",
-    "measurement_unit"         = "Measurement Unit",
-    "benchmark_value"          = "Benchmark Value",
-    "distribution"             = "Statistical Distribution",
     "impact_area"              = "Impact Area",
     "impact_area_unit"         = "Impact Area Unit",
-    "prior_impact_data_type"   = "Prior Impact Data Type",
-    "mx_prior_impact_mean"     = "Prior Impact Mean",
-    "mx_prior_impact_sd"       = "Prior Impact SD",
-    "impact_sample_size_prior" = "Prior Impact Sample Size (Poisson)",
-    "mx_prior_impact_var"      = "Prior Impact Variance (Neg Binom)",
-    "post_impact_data_type"    = "Post Impact Data Type",
-    "mx_post_impact_mean"      = "Post Impact Mean",
-    "mx_post_impact_sd"        = "Post Impact SD",
-    "impact_sample_size_post"  = "Post Impact Sample Size (Poisson)",
-    "mx_post_impact_var"       = "Post Impact Variance (Neg Binom)"
+    "prior_impact_data_type"   = "Prior Impact – Attribute Measure Data Type",
+    "mx_prior_impact_mean"     = "Mean Attribute Measure Prior to Impact",
+    "mx_prior_impact_sd"       = "NORMAL: SD Prior to Impact",
+    "impact_sample_size_prior" = "POISSON: Sample Size Prior to Impact",
+    "mx_prior_impact_var"      = "NEG BINOMIAL: Variance Prior to Impact",
+    "post_impact_data_type"    = "Post Impact – Attribute Measure Data Type",
+    "mx_post_impact_mean"      = "Mean Attribute Measure Post Impact",
+    "mx_post_impact_sd"        = "NORMAL: SD Post Impact",
+    "impact_sample_size_post"  = "POISSON: Sample Size Post Impact",
+    "mx_post_impact_var"       = "NEG BINOMIAL: Variance Post Impact"
   )
 }
 
@@ -373,51 +381,56 @@ xlsx_offset_columns <- function() {
     "biodiversity_attribute"   = "Biodiversity Attribute",
     "offset_area"              = "Offset Area",
     "offset_area_unit"         = "Offset Area Unit",
-    "prior_offset_data_type"   = "Prior Offset Data Type",
-    "mx_prior_offset_mean"     = "Prior Offset Mean",
-    "mx_prior_offset_sd"       = "Prior Offset SD",
-    "offset_sample_size_prior" = "Prior Offset Sample Size (Poisson)",
-    "mx_prior_offset_var"      = "Prior Offset Variance (Neg Binom)",
-    "post_offset_data_type"    = "Post Offset Data Type",
-    "mx_post_offset_mean"      = "Post Offset Mean",
-    "mx_post_offset_sd"        = "Post Offset SD",
-    "offset_sample_size_post"  = "Post Offset Sample Size (Poisson)",
-    "mx_post_offset_var"       = "Post Offset Variance (Neg Binom)",
-    "selected_confidence"      = "Confidence in Offset Action",
-    "time_till_end"            = "Time Till End (Years)",
+    "offset_actions_text"      = "Proposed Offset Actions",
+    "prior_offset_data_type"   = "Prior Offset – Attribute Measure Data Type",
+    "mx_prior_offset_mean"     = "Mean Attribute Measure Prior to Offset",
+    "mx_prior_offset_sd"       = "NORMAL: SD Prior to Offset",
+    "offset_sample_size_prior" = "POISSON: Sample Size Prior to Offset",
+    "mx_prior_offset_var"      = "NEG BINOMIAL: Variance Prior to Offset",
+    "post_offset_data_type"    = "Post Offset – Attribute Measure Data Type",
+    "mx_post_offset_mean"      = "Mean Attribute Measure Post Offset",
+    "mx_post_offset_sd"        = "NORMAL: SD Post Offset",
+    "offset_sample_size_post"  = "POISSON: Sample Size Post Offset",
+    "mx_post_offset_var"       = "NEG BINOMIAL: Variance Post Offset",
+    "selected_confidence"      = "Confidence in Proposed Offset Action",
+    "time_till_end"            = "Time till End (Years)",
     "discount_rate"            = "Discount Rate (%)"
   )
 }
 
-xlsx_doc_columns <- function() {
+xlsx_doc_attr_columns <- function() {
   c(
     "biodiversity_type"                = "Biodiversity Type",
     "biodiversity_component"           = "Biodiversity Component",
     "biodiversity_attribute"           = "Biodiversity Attribute",
-    "impact_area_data_type"            = "Impact Area Data Type",
-    "impact_area_empirical_details"    = "Impact Area Empirical Details",
-    "impact_area_modelled_details"     = "Impact Area Modelled Details",
-    "impact_area_expert_details"       = "Impact Area Expert Details",
-    "impact_area_proxy_details"        = "Impact Area Proxy Details",
-    "prior_impact_empirical_details"   = "Prior Impact Empirical Details",
-    "prior_impact_modelled_details"    = "Prior Impact Modelled Details",
-    "prior_impact_expert_affiliations" = "Prior Impact Expert Affiliations",
-    "prior_impact_proxy_details"       = "Prior Impact Proxy Details",
-    "post_impact_empirical_details"    = "Post Impact Empirical Details",
-    "post_impact_modelled_details"     = "Post Impact Modelled Details",
-    "post_impact_expert_affiliations"  = "Post Impact Expert Affiliations",
-    "post_impact_proxy_details"        = "Post Impact Proxy Details",
-    "prior_offset_empirical_details"   = "Prior Offset Empirical Details",
-    "prior_offset_modelled_details"    = "Prior Offset Modelled Details",
-    "prior_offset_expert_affiliations" = "Prior Offset Expert Affiliations",
-    "prior_offset_proxy_details"       = "Prior Offset Proxy Details",
-    "post_offset_empirical_details"    = "Post Offset Empirical Details",
-    "post_offset_modelled_details"     = "Post Offset Modelled Details",
-    "post_offset_expert_affiliations"  = "Post Offset Expert Affiliations",
-    "post_offset_proxy_details"        = "Post Offset Proxy Details",
-    "offset_confidence_justify"        = "Justify Confidence",
-    "offset_time_till_end_justify"     = "Justify Time Till End",
-    "offset_discount_rate_justify"     = "Justify Discount Rate"
+    "prior_impact_empirical_details"   = "EMPIRICAL Attribute Measure Prior to Impact – Provide sample size & duration",
+    "prior_impact_modelled_details"    = "MODELLED Attribute Measure Prior to Impact – Describe the model",
+    "prior_impact_expert_affiliations" = "EXPERT ELICITED Attribute Measure Prior to Impact – List expert(s) and affiliations",
+    "prior_impact_proxy_details"       = "PROXY VALUE Attribute Measure Prior to Impact – Give reference and/or describe",
+    "post_impact_empirical_details"    = "EMPIRICAL Attribute Measure Post Impact – Provide sample size & duration",
+    "post_impact_modelled_details"     = "MODELLED Attribute Measure Post Impact – Describe the model",
+    "post_impact_expert_affiliations"  = "EXPERT ELICITED Attribute Measure Post Impact – List expert(s) and affiliations",
+    "post_impact_proxy_details"        = "PROXY VALUE Attribute Measure Post Impact – Give reference and/or describe",
+    "prior_offset_empirical_details"   = "EMPIRICAL Attribute Measure Prior to Offset – Provide sample size & duration",
+    "prior_offset_modelled_details"    = "MODELLED Attribute Measure Prior to Offset – Describe the model",
+    "prior_offset_expert_affiliations" = "EXPERT ELICITED Attribute Measure Prior to Offset – List expert(s) and affiliations",
+    "prior_offset_proxy_details"       = "PROXY VALUE Attribute Measure Prior to Offset – Give reference and/or describe",
+    "post_offset_empirical_details"    = "EMPIRICAL Attribute Measure Post Offset – Provide sample size & duration",
+    "post_offset_modelled_details"     = "MODELLED Attribute Measure Post Offset – Describe the model",
+    "post_offset_expert_affiliations"  = "EXPERT ELICITED Attribute Measure Post Offset – List expert(s) and affiliations",
+    "post_offset_proxy_details"        = "PROXY VALUE Attribute Measure Post Offset – Give reference and/or describe"
+  )
+}
+
+xlsx_doc_other_columns <- function() {
+  c(
+    "biodiversity_type"            = "Biodiversity Type",
+    "biodiversity_component"       = "Biodiversity Component",
+    "biodiversity_attribute"       = "Biodiversity Attribute",
+    "benchmark_justify"            = "Justify Benchmark Value",
+    "offset_confidence_justify"    = "Justify Confidence in Proposed Offset Action",
+    "offset_time_till_end_justify" = "Justify Time till End",
+    "offset_discount_rate_justify" = "Justify Discount Rate"
   )
 }
 
@@ -426,8 +439,10 @@ rename_to_ids <- function(df, col_map) {
   label_to_id <- setNames(names(col_map), unname(col_map))
   incoming <- colnames(df)
   for (j in seq_along(incoming)) {
-    if (incoming[j] %in% names(label_to_id)) {
-      incoming[j] <- label_to_id[[incoming[j]]]
+    # read.xlsx(sep.names = " ") leaves XML entities (e.g. "&amp;") undecoded
+    nm <- gsub("&amp;", "&", incoming[j], fixed = TRUE)
+    if (nm %in% names(label_to_id)) {
+      incoming[j] <- label_to_id[[nm]]
     }
   }
   colnames(df) <- incoming
@@ -466,9 +481,10 @@ validate_xlsx_upload <- function(filepath) {
     proj_ids    <- c("project_name", "prepared_by", "date",
                       "proposal_overview", "ecological_context",
                       "biodiversity_impacts", "offset_package")
-    proj_labels <- c("Project Name", "Prepared By", "Date (dd-mm-yyyy)",
-                      "Proposal Overview", "Ecological Context",
-                      "Biodiversity Impacts", "Offset Package")
+    proj_labels <- c("Project Name", "Prepared By", "Date (dd/mm/yyyy)",
+                      "Summary of Proposal Overview", "Ecological Context and Impact Summary",
+                      "Biodiversity Impacts Addressed Outside of the Model",
+                      "Summary Description of Proposed Offset Package")
     for (i in seq_along(proj_labels)) {
       match_row <- which(proj_sheet[[1]] == proj_labels[i])
       if (length(match_row) == 1 && ncol(proj_sheet) >= 2) {
@@ -479,39 +495,69 @@ validate_xlsx_upload <- function(filepath) {
     }
   }
 
-  # --- Read Impact Attributes ---
-  impact_df <- tryCatch(read.xlsx(filepath, sheet = "Impact Attributes", colNames = TRUE, sep.names = " "),
+  # --- Read Biodiversity ---
+  bio_df <- tryCatch(read.xlsx(filepath, sheet = "Biodiversity", colNames = TRUE, sep.names = " "),
+                      error = function(e) NULL)
+  if (is.null(bio_df)) {
+    add_err(NA, "Biodiversity", "Sheet", "Missing 'Biodiversity' sheet")
+    return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
+  }
+  if (nrow(bio_df) == 0) {
+    add_err(NA, "Biodiversity", "Sheet", "No data rows")
+    return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
+  }
+  bio_df <- rename_to_ids(bio_df, xlsx_biodiversity_columns())
+
+  # --- Read Impact Site ---
+  impact_df <- tryCatch(read.xlsx(filepath, sheet = "Impact Site", colNames = TRUE, sep.names = " "),
                          error = function(e) NULL)
   if (is.null(impact_df)) {
-    add_err(NA, "Impact Attributes", "Sheet", "Missing 'Impact Attributes' sheet")
+    add_err(NA, "Impact Site", "Sheet", "Missing 'Impact Site' sheet")
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   if (nrow(impact_df) == 0) {
-    add_err(NA, "Impact Attributes", "Sheet", "No data rows")
+    add_err(NA, "Impact Site", "Sheet", "No data rows")
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   impact_df <- rename_to_ids(impact_df, xlsx_impact_columns())
 
-  # --- Read Offset Attributes ---
-  offset_df <- tryCatch(read.xlsx(filepath, sheet = "Offset Attributes", colNames = TRUE, sep.names = " "),
+  # --- Join Biodiversity fields (distribution, measurement_unit, benchmark_value) onto Impact rows ---
+  bio_data <- bio_df[, setdiff(colnames(bio_df), join_keys), drop = FALSE]
+  bio_keys <- paste(bio_df$biodiversity_type, bio_df$biodiversity_component,
+                     bio_df$biodiversity_attribute, sep = "|||")
+  impact_keys_pre <- paste(impact_df$biodiversity_type, impact_df$biodiversity_component,
+                            impact_df$biodiversity_attribute, sep = "|||")
+  bio_order <- match(impact_keys_pre, bio_keys)
+  impact_df <- cbind(impact_df, bio_data[bio_order, , drop = FALSE])
+
+  # --- Read Offset Site ---
+  offset_df <- tryCatch(read.xlsx(filepath, sheet = "Offset Site", colNames = TRUE, sep.names = " "),
                          error = function(e) NULL)
   if (is.null(offset_df)) {
-    add_err(NA, "Offset Attributes", "Sheet", "Missing 'Offset Attributes' sheet")
+    add_err(NA, "Offset Site", "Sheet", "Missing 'Offset Site' sheet")
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   if (nrow(offset_df) == 0) {
-    add_err(NA, "Offset Attributes", "Sheet", "No data rows")
+    add_err(NA, "Offset Site", "Sheet", "No data rows")
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   offset_df <- rename_to_ids(offset_df, xlsx_offset_columns())
 
-  # --- Read Documentation (optional) ---
-  doc_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation", colNames = TRUE, sep.names = " "),
-                      error = function(e) NULL)
-  if (!is.null(doc_df) && nrow(doc_df) > 0) {
-    doc_df <- rename_to_ids(doc_df, xlsx_doc_columns())
+  # --- Read Documentation sheets (optional) ---
+  doc_attr_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation -AttributeMeasure", colNames = TRUE, sep.names = " "),
+                           error = function(e) NULL)
+  if (!is.null(doc_attr_df) && nrow(doc_attr_df) > 0) {
+    doc_attr_df <- rename_to_ids(doc_attr_df, xlsx_doc_attr_columns())
   } else {
-    doc_df <- NULL
+    doc_attr_df <- NULL
+  }
+
+  doc_other_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation – Other ", colNames = TRUE, sep.names = " "),
+                            error = function(e) NULL)
+  if (!is.null(doc_other_df) && nrow(doc_other_df) > 0) {
+    doc_other_df <- rename_to_ids(doc_other_df, xlsx_doc_other_columns())
+  } else {
+    doc_other_df <- NULL
   }
 
   # --- Validate Impact rows ---
@@ -719,12 +765,23 @@ validate_xlsx_upload <- function(filepath) {
   joined <- cbind(impact_df, offset_data)
 
   # Merge in documentation if present
-  if (!is.null(doc_df) && nrow(doc_df) > 0) {
-    doc_data <- doc_df[, setdiff(colnames(doc_df), join_keys), drop = FALSE]
-    doc_keys <- paste(doc_df$biodiversity_type, doc_df$biodiversity_component,
-                       doc_df$biodiversity_attribute, sep = "|||")
+  if (!is.null(doc_attr_df) && nrow(doc_attr_df) > 0) {
+    doc_data <- doc_attr_df[, setdiff(colnames(doc_attr_df), join_keys), drop = FALSE]
+    doc_keys <- paste(doc_attr_df$biodiversity_type, doc_attr_df$biodiversity_component,
+                       doc_attr_df$biodiversity_attribute, sep = "|||")
     doc_order <- match(impact_keys, doc_keys)
     # Only merge rows that matched; fill NA for unmatched
+    if (any(!is.na(doc_order))) {
+      doc_aligned <- doc_data[doc_order, , drop = FALSE]
+      joined <- cbind(joined, doc_aligned)
+    }
+  }
+
+  if (!is.null(doc_other_df) && nrow(doc_other_df) > 0) {
+    doc_data <- doc_other_df[, setdiff(colnames(doc_other_df), join_keys), drop = FALSE]
+    doc_keys <- paste(doc_other_df$biodiversity_type, doc_other_df$biodiversity_component,
+                       doc_other_df$biodiversity_attribute, sep = "|||")
+    doc_order <- match(impact_keys, doc_keys)
     if (any(!is.na(doc_order))) {
       doc_aligned <- doc_data[doc_order, , drop = FALSE]
       joined <- cbind(joined, doc_aligned)
@@ -770,7 +827,7 @@ process_xlsx_upload <- function(validation_result, session, results,
   updateTextInput(session, "prepared_by",  value = proj$prepared_by %||% "")
   if (!is.null(proj$date) && !is.na(proj$date) && nchar(proj$date) > 0) {
     suppressWarnings(updateDateInput(session, "date",
-                                     value = as.Date(proj$date, format = "%d-%m-%Y")))
+                                     value = as.Date(proj$date, format = "%d/%m/%Y")))
   }
   updateTextAreaInput(session, "proposal_overview",    value = proj$proposal_overview %||% "")
   updateTextAreaInput(session, "ecological_context",   value = proj$ecological_context %||% "")

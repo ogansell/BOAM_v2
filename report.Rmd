@@ -1,5 +1,5 @@
 ---
-title: "Biodiversity Offsetting Report"
+title: "Net Gain Model Outputs"
 output:
   pdf_document:
     latex_engine: xelatex
@@ -214,11 +214,13 @@ df_clean <- df_clean |>
                            round(.data[["NPBV P95"]], 2), "]"))
   ) |>
   dplyr::select(
-    `Biodiversity Type` = `biodiversity type`,
-    `Component`         = `biodiversity component`,
-    `Attribute`         = `biodiversity attribute`,
-    `Measurement Unit`  = `measurement unit`,
-    Impact, Offset, NPBV
+    `Biodiversity Type`                 = `biodiversity type`,
+    `Biodiversity Component`            = `biodiversity component`,
+    `Biodiversity Attribute`            = `biodiversity attribute`,
+    `Measurement Unit`                  = `measurement unit`,
+    `Biodiversity Value at Impact Site` = `Impact`,
+    `Biodiversity Value at Offset Site` = `Offset`,
+    NPBV
   )
 
 
