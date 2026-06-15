@@ -264,30 +264,14 @@ body {
   margin-bottom: 2px;
   color: #384246;
 }
-.input-block > label {
-  position: absolute;
-  top: 0;              /* anchor to top of the cell */
-  left: 0;
-  right: 0;
-  margin: 0;
-  line-height: 1.1;
-  /* optional: soften long labels a bit */
-  word-break: break-word;
-}
-
-/* Add top space only when a label is present */
-.input-block:has(> label),
-.input-block:has(> .shiny-input-container > label) {
-  padding-top: 24px;              /* reserve space for the label */
-}
-
-/* Position labels so wrapping doesn't push inputs down */
 .input-block > label,
 .input-block .shiny-input-container > label {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  margin: 0;
-  line-height: 1.1;
+  position: static;
+  display: block;
+  margin: 0 0 2px;
+  line-height: 1.2;
+  /* allow long labels to wrap onto multiple lines without overlapping the input */
+  word-break: break-word;
   overflow-wrap: anywhere;
 }
 
