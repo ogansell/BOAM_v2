@@ -186,19 +186,16 @@ ui <- fluidPage(
                       class = "form-section",
 
                       HTML("
-                        <p>This net gain model evaluates offset proposals for ecological equivalence and net gain across biodiversity type, amount, and time, based on user inputs, and can be used to simulate numerous biodiversity offset scenarios to compare predicted outcomes.</p>
+                        <p>This net gain model evaluates offset proposals for ecological equivalence and net gain across biodiversity type, 
+                        amount, and time, based on user inputs, and can be used to simulate numerous biodiversity offset scenarios to compare predicted outcomes.</p>
 
-                        <p>The model uses Net Present Biodiversity Value (NPBV) to indicate predicted outcomes from offset proposals, coupled with prediction intervals to describe certainty associated with the model outputs.</p>
+                        <p>The Net Gain Model is based on the biodiversity offset accounting model (BOAM, Maseyk 2016^) 
+                        and retains the hierarchical, relatively disaggregated structure (Figure 1) and use of 
+                        Net Present Biodiversity Value (NPBV) to indicate predicated outcomes from offset proposals, 
+                        coupled with prediction intervals to describe certainty associated with the model outputs.</p>
 
-                        <p>The NPBV does not quantify predicted net gain outcomes. Outputs from this model should be further interpreted to meaningful ecological 'on-the-ground' measures to support quantified (e.g., 10%) net gain claims.</p>
-
-                        <p><strong>The system will time out after 120 minutes of inactivity.</strong></p>
-                        <p><strong>Use the Save Draft feature regularly to ensure work is not lost.</strong></p>
-
-                        <p>For assistance and questions please contact:<br>
-                        Jane Doe<br>
-                        <a href='mailto:jane.doe@example.com'>jane.doe@example.com</a><br>
-                        Phone: +64 21 123 4567</p>
+                        <p>The NPBV does not quantify predicted net gain outcomes. Outputs from this model should be further interpreted to meaningful 
+                        ecological 'on-the-ground' measures to support quantified (e.g., 10%) net gain claims.</p>
                       "),
 
                       tags$img(
@@ -210,8 +207,8 @@ ui <- fluidPage(
 
                       tags$h4("How uncertainty is calculated in this model"),
 
-                      tags$p("The original BOAM model is deterministic and uses single point values to describe biodiversity values at the impact and offset sites—one number in,
-                             one number out. This revised model makes uncertainty explicit by using a Monte Carlo simulation framework to propagate
+                      tags$p("The original BOAM model is deterministic and uses single point values to describe biodiversity values at the impact and offset sites. 
+                      This revised model makes uncertainty explicit by using a Monte Carlo simulation framework to propagate
                              uncertainty through all stages of the offset calculation."),
 
                       tags$p("For each biodiversity attribute, the model takes the user’s inputs describing central tendency and uncertainty
@@ -220,7 +217,7 @@ ui <- fluidPage(
                       statistical distribution constrained by ecological bounds. This is done independently for all four measurement points:
                              prior to impact, post impact, prior to offset, and post offset."),
 
-                      tags$p("These simulated values are then carried through the full Net Present Biodiversity Value (NPBV) calculation - including benchmark scaling,
+                      tags$p("These simulated values are then carried through the full NPBV calculation - including benchmark scaling,
                              area weighting, confidence adjustment, and time discounting - producing 10,000 plausible NPBV outcomes for each attribute.
                              In this way, uncertainty in the inputs is consistently propagated through the entire model,
                              rather than being applied only to the final result."),
@@ -296,7 +293,17 @@ ui <- fluidPage(
 
                       tags$p("If you're unsure which option applies, ask: ", tags$em("was this a direct count from survey
                              plots, a continuous measurement with known variability, or a best estimate from an expert
-                             because direct data wasn't available?"), " That will usually point to the right choice.")
+                             because direct data wasn't available?"), " That will usually point to the right choice."),
+                      
+                      tags$h4("For further information and assistance:"),
+                      
+                      tags$p("For further information on the Net Gain Model see:
+                            [ms in development – to add reference when available]"),
+                      
+                      tags$p("^For further information on the biodiversity offsetting accounting model see:
+                             Maseyk FJF, Barea LP, Stephens RTT, Possingham HP, Dutson G, Maron M 2016. 
+                             A disaggregated biodiversity offset accounting model to improve estimation of 
+                             ecological equivalency and no net loss. Biological Conservation 204:322–332.")
                     )
                   ),
 
@@ -305,19 +312,116 @@ ui <- fluidPage(
                     "How to use this model",
                     div(
                       class = "form-section",
-                      HTML("
-      <ol>
-        <li>Enter Biodiversity Type</li>
-        <li>Enter a Biodiversity Component</li>
-        <li>Enter a Biodiversity Attribute</li>
-        <li>Enter all remaining data associated with that Biodiversity Attribute</li>
-        <li>Click on <strong>'Run Simulations'</strong></li>
-        <li>Click on <strong>'Save to Report & Reset'</strong></li>
-        <li>Repeat steps 3–6 for all additional attributes</li>
-        <li>Repeat steps 2–7 for all additional Biodiversity Components</li>
-        <li>Repeat steps 1–8 for additional Biodiversity Types</li>
-      </ol>
-    ")
+                      style = "max-width: 900px; margin: 0 auto;",
+                      
+                      # ── Important First Steps ──────────────────────────────────────────────
+                      h4("Important First Steps"),
+                      tags$ol(
+                        tags$li("Read the ", tags$strong("About"), " tab."),
+                        tags$li("Read the ", tags$strong("Net Gain Model Principles"), " (see below)."),
+                        tags$li("Choose your method for data entry (Options A or B below).")
+                      ),
+                      
+                      tags$hr(),
+                      
+                      # ── Option A: Manual Entry ─────────────────────────────────────────────
+                      h4("Option A \u2014 Manual Data Entry"),
+                      tags$ol(
+                        tags$li("Complete the ", tags$strong("Project Details"), " tab."),
+                        tags$li("Move to the ", tags$strong("Project Calculations"), " tab."),
+                        tags$li("Enter Biodiversity Type."),
+                        tags$li("Enter a Biodiversity Component."),
+                        tags$li("Enter a Biodiversity Attribute."),
+                        tags$li("Enter Measurement Unit, Benchmark Value, and Statistical Distribution."),
+                        tags$li("Enter all Impact Site data for fields marked with an asterisk (*) first. Supporting information can be added later but is required for a complete output report."),
+                        tags$li("Enter all Offset Site data for fields marked with an asterisk (*) first. Supporting information can be added later but is required for a complete output report."),
+                        tags$li("Click ", tags$strong("Run Simulations"), "."),
+                        tags$li("Click ", tags$strong("Save to Report & Reset"), "."),
+                        tags$li("Repeat steps 5\u201310 for all additional Biodiversity Attributes within each Biodiversity Component."),
+                        tags$li("Repeat steps 4\u201310 for all additional Biodiversity Components within each Biodiversity Type."),
+                        tags$li("Repeat steps 3\u201310 for all additional Biodiversity Types targeted within the proposed offset."),
+                        tags$li("Move to the ", tags$strong("Export Report"), " tab and click ", tags$strong("Download Summary"), " or ", tags$strong("Download Full Report"), ".")
+                      ),
+                      
+                      div(class = "alert alert-info",
+                          tags$strong("Tip: "), "Use ", tags$strong("Save Draft"), " regularly to ensure work is not lost. Drafts can be reloaded into a fresh session via ", tags$strong("Load Draft"), "."
+                      ),
+                      
+                      tags$hr(),
+                      
+                      # ── Option B: Excel Upload ─────────────────────────────────────────────
+                      h4("Option B \u2014 Bulk Data Entry via Excel Upload"),
+                      tags$ol(
+                        tags$li("Complete the ", tags$strong("Project Details"), " tab."),
+                        tags$li("Move to the ", tags$strong("Project Calculations"), " tab."),
+                        tags$li("Click ", tags$strong("Download Template"), " and complete the spreadsheet."),
+                        tags$li("Click ", tags$strong("Upload Data"), " \u2014 simulations will run automatically."),
+                        tags$li("Click ", tags$strong("Save to Report & Reset"), "."),
+                        tags$li("Move to the ", tags$strong("Export Report"), " tab and click ", tags$strong("Download Summary"), " or ", tags$strong("Download Full Report"), ".")
+                      ),
+                      
+                      div(class = "alert alert-info",
+                          tags$strong("Tip: "), "Use ", tags$strong("Save Draft"), " regularly to ensure work is not lost. Drafts can be reloaded into a fresh session via ", tags$strong("Load Draft"), "."
+                      ),
+                      
+                      tags$hr()
+                    )
+                  ),
+                  # * Net Gain Model Principles ──────────────────────────────────────────
+                  tabPanel(
+                    "Net Gain Model Principles",
+                    div(
+                      class = "form-section",
+                      style = "max-width: 900px; margin: 0 auto;",
+                      p("The purpose of these principles is to reinforce the protocols and standards that accompany the 
+                        Biodiversity Offsets Accounting Model and to further inform good practice use of the Net Gain Model. 
+                        Deviating from these principles risks inappropriate use of the model and undermining the credibility of any offset proposal."),
+                      tags$table(
+                        class = "table table-bordered",
+                        style = "margin-top: 12px;",
+                        tags$thead(tags$tr(
+                          tags$th(style = "width:15%;", "Principle"),
+                          tags$th(style = "width:42%;", "Requirement"),
+                          tags$th(style = "width:43%;", "Explanation")
+                        )),
+                        tags$tbody(
+                          tags$tr(
+                            tags$td(tags$strong("Principle 1")),
+                            tags$td("The model must be used by a suitably qualified ecologist with experience in biodiversity offsetting and use of models. Contributors to expert elicitation processes must also be suitably qualified and experienced in the relevant ecological discipline."),
+                            tags$td("Designing a biodiversity offset is complex and requires a solid grounding in ecology, restoration, conservation techniques, and statistics. It is common for a group of ecologists covering different disciplines to be involved in the same offset design.")
+                          ),
+                          tags$tr(
+                            tags$td(tags$strong("Principle 2")),
+                            tags$td(
+                              "The following constraints and data standards must be adhered to:",
+                              tags$ol(
+                                tags$li("Selected biodiversity attributes are inclusive of a meaningful range of biodiversity components representing biodiversity types."),
+                                tags$li("Biodiversity attributes capture important biological states (e.g., different stages and/or ages of species)."),
+                                tags$li("Parameters and values are empirically informed wherever possible; unverifiable parameters are avoided."),
+                                tags$li("The currency is disaggregated, reducing trade-offs between dissimilar biodiversity."),
+                                tags$li("Currency limitations are understood and rules addressing concealed loss are set outside the model."),
+                                tags$li("Where empirical data are lacking, uncertainty is explicitly quantified.")
+                              )
+                            ),
+                            tags$td("Area-by-condition currencies assume area and condition are equitable and exchangeable, with no theoretical basis for this. This model addresses the surrogacy issue by applying the area multiplier separately to the condition measure. See also Principle 5.")
+                          ),
+                          tags$tr(
+                            tags$td(tags$strong("Principle 3")),
+                            tags$td("Model outputs are not a standalone answer. They must be used alongside internationally recognised offsetting principles, the mitigation hierarchy, and social, cultural, and ecological considerations including mana whenua engagement and incorporation of m\u0101tauranga."),
+                            tags$td("The model evaluates ecological equivalence of biodiversity exchanges intended to deliver net gain. Demonstrating an acceptably high likelihood of achieving this is central to the offset design, but the outputs do not on their own complete the offset design.")
+                          ),
+                          tags$tr(
+                            tags$td(tags$strong("Principle 4")),
+                            tags$td("The level of certainty associated with a proposed offset action must exceed 50%. Adaptive management must only be used to refine techniques above this threshold, not to test whether an action will work. Certainty must be demonstrated through evidence-based methods and documented in the offset proposal."),
+                            tags$td("Experimental methods aimed at generating biodiversity gains are not appropriate for delivering an offset. The required certainty level must be justified within the supporting documentation in the model output report.")
+                          ),
+                          tags$tr(
+                            tags$td(tags$strong("Principle 5")),
+                            tags$td("Incorporating consideration of extent as well as enhancing condition into offset proposals should be pursued wherever possible."),
+                            tags$td("This model uses an area-by-condition approach despite no theoretical basis for area and condition being equitable and exchangeable. This limitation must be addressed outside the model. Without replacement of area (as well as condition), downward trajectories for indigenous representation in the landscape will not be reversed.")
+                          )
+                        )
+                      )
                     )
                   ),
 
@@ -795,20 +899,20 @@ ui <- fluidPage(
                              div(class = "section-header", "Saved Results"),
                              DTOutput("saved_table"),
                              tags$br(),
-                             # div(style = "text-align: center;",
-                             #     actionButton("go_to_export", "Proceed to Export Report >", class = "btn btn-dark-green", style = "margin-bottom: 20px;")
-                             # )
-                           ),
-
-                           conditionalPanel(
-                             condition = "output.saved_rows > 0",
-                             div(class = "section-header", "Summary Table"),
-                             DTOutput("summary_table"),
-                             tags$br(),
                              div(style = "text-align: center;",
                                  actionButton("go_to_export", "Proceed to Export Report >", class = "btn btn-dark-green", style = "margin-bottom: 20px;")
                              )
                            )
+
+                           # conditionalPanel(
+                           #   condition = "output.saved_rows > 0",
+                           #   div(class = "section-header", "Summary Table"),
+                           #   DTOutput("summary_table"),
+                           #   tags$br(),
+                           #   div(style = "text-align: center;",
+                           #       actionButton("go_to_export", "Proceed to Export Report >", class = "btn btn-dark-green", style = "margin-bottom: 20px;")
+                           #   )
+                           # )
 
                   ),
 
@@ -823,7 +927,7 @@ ui <- fluidPage(
                                downloadButton("download_long_report_pdf", "Download Full Report as pdf", class = "btn btn-dark-green"),
                                tags$br(), tags$br(), tags$br()
                            )
-                  ),
+                  )
       )
   )
 )

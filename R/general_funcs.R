@@ -428,6 +428,27 @@ join_keys <- c("biodiversity_type", "biodiversity_component", "biodiversity_attr
 validate_xlsx_upload <- function(filepath) {
   require(openxlsx)
 
+  # Check the file is a readable .xlsx before doing anything else.
+  # This catches files saved in the wrong format (e.g. .xls, .csv) even if
+  # they have been renamed to .xlsx, which openxlsx cannot read.
+  sheet_names <- tryCatch(getSheetNames(filepath), error = function(e) NULL)
+  if (is.null(sheet_names)) {
+    return(list(
+      valid = FALSE,
+      errors = data.frame(
+        Row = NA, Sheet = "File", Field = "Format",
+        Message = paste(
+          "The file could not be opened as an Excel (.xlsx) file.",
+          "This usually happens when the file has been saved in a different format.",
+          "Please re-save it from Excel using 'Save As' \u2192 'Excel Workbook (.xlsx)' and try again."
+        ),
+        stringsAsFactors = FALSE
+      ),
+      project = list(),
+      attributes = data.frame()
+    ))
+  }
+
   errors <- data.frame(Row = integer(), Sheet = character(), Field = character(),
                         Message = character(), stringsAsFactors = FALSE)
 
