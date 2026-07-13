@@ -23,36 +23,13 @@ header-includes:
   - \pagestyle{empty}
   - \usepackage{pdflscape}
   - \usepackage{xcolor}
-  - \definecolor{darkgreenbg}{HTML}{194036}
   - \usepackage[most]{tcolorbox}
   - \usepackage{caption}
   - \captionsetup[table]{labelfont=bf,textfont=bf}
-  - \newtcolorbox{mytitlebox}{
-      colback=darkgreenbg,
-      colframe=darkgreenbg,
-      boxrule=0pt,
-      arc=0mm,
-      top=6pt,
-      bottom=6pt,
-      left=10pt,
-      right=10pt,
-      width=\textwidth,
-      before skip=0pt,
-      after skip=0pt
-    }
-  - \newtcolorbox{mytitleboxL}{
-      colback=darkgreenbg,
-      colframe=darkgreenbg,
-      boxrule=0pt,
-      arc=0mm,
-      top=6pt,
-      bottom=6pt,
-      left=10pt,
-      right=10pt,
-      width=\linewidth,
-      before skip=0pt,
-      after skip=0pt
-    }
+  - \newcommand{\sectionheading}[1]{\vspace{1.4em}\noindent{\Large\bfseries#1}\par\noindent\rule{\linewidth}{0.8pt}\vspace{0.6em}}
+  - \newcommand{\subsectionheading}[1]{\vspace{1em}\noindent{\large\bfseries#1}\par\vspace{0.4em}}
+  - \newcommand{\attributesep}[1]{\vspace{1em}\noindent\rule{\linewidth}{0.4pt}\vspace{1em}}
+  - \newcommand{\fieldgroupheading}[1]{\vspace{0.6em}\noindent\textbf{#1}\vspace{0.2em}\par}
   - \newtcolorbox{mycontentbox}{
       colback=gray!15,
       colframe=gray!15,
@@ -65,26 +42,6 @@ header-includes:
       width=\textwidth,
       before skip=0pt,
       after skip=0pt
-    }
-  - \newtcolorbox{myfullbox}{
-      enhanced,
-      colback=gray!15,
-      colframe=gray!15,
-      boxrule=0pt,
-      arc=0mm,
-      top=0pt,
-      bottom=0pt,
-      left=0pt,
-      right=0pt,
-      width=\textwidth,
-      before skip=1em,
-      after skip=1em,
-      nobeforeafter,
-      boxsep=0pt,
-      sharp corners,
-      valign=center,
-      halign=left,
-      breakable=false
     }
 ---
 
@@ -143,15 +100,13 @@ combine_value_unit <- function(value, unit) {
   paste0(value, " ", unit)
 }
 
-# ── Section title boxes (portrait / landscape) ───────────────────────────────
-section_title <- function(text, landscape = FALSE) {
-  env <- if (landscape) "mytitleboxL" else "mytitlebox"
-  paste0(
-    "\\noindent\n\\begin{", env, "}\n",
-    "\\Large\\bfseries\\color{white} ", text, "\n",
-    "\\end{", env, "}\n\n"
-  )
-}
+# ── Section / subsection headings — plain numbered text, no colored box ─────
+# \sectionheading{}/\subsectionheading{} are LaTeX macros defined in the YAML
+# header-includes (real preamble LaTeX — not subject to the brace-escaping
+# pandoc applies to results='asis' chunk output, unlike bare `{...}` groups).
+section_title <- function(text) paste0("\\sectionheading{", text, "}\n\n")
+subsection_title <- function(text) paste0("\\subsectionheading{", text, "}\n\n")
+fieldgroup_title <- function(text) paste0("\\fieldgroupheading{", text, "}\n\n")
 
 # ── Auto-number Type -> Component -> Attribute (1., 1.1, 1.1a...) ───────────
 # Numbers are generated fresh at render time from row order/grouping in
@@ -186,23 +141,32 @@ add_structure_numbering <- function(df) {
 }
 
 # ── Render a Field | Value table (the recurring narrow-table pattern) ───────
-render_field_value_table <- function(fields, values, caption, pack_index = NULL) {
-  tbl <- tibble::tibble(Field = fields, Value = values) |>
+# No header row (col.names = NULL) — the bold Field labels in column 1 (e.g.
+# "Biodiversity Attribute") are self-explanatory without a "Field"/"Value"
+# header, matching the source template's layout.
+#
+# Deliberately no group-label/pack_rows() support here: kableExtra locates
+# pack_rows() target rows by searching for a first-match on the row's
+# rendered TEXT (see group_rows_latex()/add_indent_latex() — they key off
+# table_info$contents, not a stable position), so if two rows in the table
+# render identical text (e.g. "Data Type" / "Empirical" repeating between a
+# Pre and Post measurement point) it can silently edit the wrong row and
+# corrupt the table. Appendix 1 works around this by rendering each group as
+# its own small table with a plain text heading in front instead.
+render_field_value_table <- function(fields, values, caption = NULL) {
+  tibble::tibble(Field = fields, Value = values) |>
     kbl(booktabs = TRUE, escape = FALSE, caption = caption, label = NA,
-        row.names = FALSE, longtable = TRUE) |>
+        row.names = FALSE, longtable = TRUE, col.names = NULL) |>
     kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) |>
-    column_spec(1, width = "5cm") |>
+    column_spec(1, width = "5cm", bold = TRUE) |>
     column_spec(2, width = "10cm")
-
-  if (!is.null(pack_index)) {
-    tbl <- tbl |> pack_rows(index = pack_index)
-  }
-
-  tbl
 }
 
 # ── One measurement point's rows (data type, description, mean + SD/n/var) ──
-measurement_point_rows <- function(label, data_type, mean, sd, poisson_n, nb_var,
+# Field labels are plain ("Data Type", "Mean", ...) — the surrounding
+# pack_rows() subheading (e.g. "Pre impact") supplies the context, so
+# prefixing every field with it too just made the table noisier.
+measurement_point_rows <- function(data_type, mean, sd, poisson_n, nb_var,
                                     dist, p_low, p50, p_high, ci_level,
                                     empirical_d, modelled_d, expert_d, proxy_d) {
   dt_val <- if (is.null(data_type) || is.na(data_type) || !nzchar(trimws(data_type))) {
@@ -224,35 +188,33 @@ measurement_point_rows <- function(label, data_type, mean, sd, poisson_n, nb_var
   }
 
   rows <- data.frame(
-    Field = c(paste0(label, " – Data Type"), paste0(label, " – Data Type Description")),
+    Field = c("Data Type", "Data Type Description"),
     Value = c(fallback_text(data_type), fallback_text(desc)),
     stringsAsFactors = FALSE
   )
 
   if (!is.na(dt_val) && dt_val == "Expert elicited") {
     stat_rows <- data.frame(
-      Field = c(paste0(label, " – Elicited Low Estimate"),
-                paste0(label, " – Elicited Median Estimate"),
-                paste0(label, " – Elicited High Estimate"),
-                paste0(label, " – Elicited CI Level")),
+      Field = c("Elicited Low Estimate", "Elicited Median Estimate",
+                "Elicited High Estimate", "Elicited CI Level"),
       Value = c(fallback_text(p_low), fallback_text(p50), fallback_text(p_high), fallback_text(ci_level)),
       stringsAsFactors = FALSE
     )
   } else if (!is.null(dist) && !is.na(dist) && dist == "Poisson") {
     stat_rows <- data.frame(
-      Field = c(paste0(label, " – Mean"), paste0(label, " – Sample Size")),
+      Field = c("Mean", "Sample Size"),
       Value = c(fallback_text(mean), fallback_text(poisson_n)),
       stringsAsFactors = FALSE
     )
   } else if (!is.null(dist) && !is.na(dist) && dist == "Negative Binomial") {
     stat_rows <- data.frame(
-      Field = c(paste0(label, " – Mean"), paste0(label, " – Variance")),
+      Field = c("Mean", "Variance"),
       Value = c(fallback_text(mean), fallback_text(nb_var)),
       stringsAsFactors = FALSE
     )
   } else {
     stat_rows <- data.frame(
-      Field = c(paste0(label, " – Mean"), paste0(label, " – SD")),
+      Field = c("Mean", "SD"),
       Value = c(fallback_text(mean), fallback_text(sd)),
       stringsAsFactors = FALSE
     )
@@ -285,26 +247,22 @@ knitr::asis_output(paste0(
 
 emit_summary_field <- function(number, title, value) {
   paste0(
-    "\\begin{myfullbox}\n",
-    "\\noindent\n",
-    "\\begin{mytitlebox}\n",
-    "\\Large\\bfseries\\color{white} ", number, " ", title, "\n",
-    "\\end{mytitlebox}\n\n",
+    "\\begin{samepage}\n",
+    subsection_title(paste0(number, " ", title)),
     "\\begin{mycontentbox}\n",
     fallback_text(value), "\n",
-    "\\end{mycontentbox}\n\n",
-    "\\end{myfullbox}\n",
+    "\\end{mycontentbox}\n",
+    "\\end{samepage}\n",
     "\\vspace{1em}\n\n"
   )
 }
 
 knitr::asis_output(paste0(
-  section_title("1. Project Summary"),
-  "\\vspace{0.5em}\n\n",
-  emit_summary_field("1.1", "Proposal Overview", params$proposal_overview),
-  emit_summary_field("1.2", "Ecological Context and Impact Summary", params$ecological_context),
-  emit_summary_field("1.3", "Biodiversity Impacts Addressed Outside of the Model", params$biodiversity_impacts),
-  emit_summary_field("1.4", "Summary Description of Proposed Offset Package", params$offset_package)
+  section_title("1. PROJECT SUMMARY"),
+  emit_summary_field("1.1", "Development proposal overview", params$proposal_overview),
+  emit_summary_field("1.2", "Summary of ecological context and anticipated impact", params$ecological_context),
+  emit_summary_field("1.3", "Additional ecological impacts addressed outside of the net gain model", params$biodiversity_impacts),
+  emit_summary_field("1.4", "Summary of proposed offset package", params$offset_package)
 ))
 ```
 
@@ -315,7 +273,7 @@ knitr::asis_output(paste0(
 
 knitr::asis_output(paste0(
   "\\newpage\n",
-  section_title("2. Model Structure")
+  section_title("2. MODEL STRUCTURE")
 ))
 
 if (nrow(structured_df) == 0) {
@@ -334,7 +292,7 @@ if (nrow(structured_df) == 0) {
   # Fixed, wrapping column widths (rather than scale_down) keep long free-text
   # Type/Component/Attribute values legible instead of shrinking the table.
   struct_table |>
-    kbl(booktabs = TRUE, escape = FALSE, caption = "Model Structure", row.names = FALSE) |>
+    kbl(booktabs = TRUE, escape = FALSE, label = NA, row.names = FALSE) |>
     kable_styling(latex_options = "hold_position", font_size = 9) |>
     column_spec(1, width = "5.3cm") |>
     column_spec(2, width = "5.3cm") |>
@@ -350,7 +308,7 @@ if (nrow(structured_df) == 0) {
 
 knitr::asis_output(paste0(
   "\\newpage\n",
-  section_title("3. Model Parameters \\& Supporting Information")
+  section_title("3. MODEL PARAMETERS AND SUPPORTING INFORMATION")
 ))
 
 if (nrow(structured_df) == 0) {
@@ -359,30 +317,35 @@ if (nrow(structured_df) == 0) {
   for (i in seq_len(nrow(structured_df))) {
     row <- structured_df[i, , drop = FALSE]
 
-    header <- paste0(
-      get_field(row, "attribute_number"), " ", esc_latex(get_field(row, "biodiversity_attribute")),
-      " (", esc_latex(get_field(row, "biodiversity_component")),
-      " — ", esc_latex(get_field(row, "biodiversity_type")), ")"
-    )
-
-    knitr::asis_output(section_title(header))
+    # No heading box above each attribute — Biodiversity Type/Component/
+    # Attribute are the first three rows of the table itself instead, so the
+    # context repeats above every attribute without a separate table header.
+    if (i > 1) {
+      cat("\\attributesep{}\n\n")
+    }
 
     offset_area_val <- combine_value_unit(get_field(row, "offset_area"), get_field(row, "offset_area_unit"))
 
     fields <- c(
-      "Attribute Measure Unit",
+      "Biodiversity Type",
+      "Biodiversity Component",
+      "Biodiversity Attribute",
+      "Attribute Measure (Unit)",
       "Benchmark Value",
-      "Justification for Benchmark Value",
+      "Justification for Benchmark",
       "Proposed Offset Area",
       "Proposed Offset Action(s)",
       "Confidence in Proposed Offset Action",
-      "Justification for Confidence",
+      "Justification for Confidence in Proposed Offset Action",
       "Time till End (Years)",
-      "Justification for Time Horizon",
+      "Justification for Time Horizon (Time till End)",
       "Discount Rate (\\%)",
       "Justification for Discount Rate"
     )
     values <- c(
+      paste0(get_field(row, "type_number"), " ", esc_latex(get_field(row, "biodiversity_type"))),
+      paste0(get_field(row, "component_number"), " ", esc_latex(get_field(row, "biodiversity_component"))),
+      paste0(get_field(row, "attribute_number"), " ", esc_latex(get_field(row, "biodiversity_attribute"))),
       fallback_text(get_field(row, "measurement_unit")),
       fallback_text(get_field(row, "benchmark_value")),
       fallback_text(get_field(row, "benchmark_justify")),
@@ -396,13 +359,7 @@ if (nrow(structured_df) == 0) {
       fallback_text(get_field(row, "offset_discount_rate_justify"))
     )
 
-    print(render_field_value_table(
-      fields, values,
-      caption = paste0("Model Parameters: ", get_field(row, "attribute_number"), " ",
-                        get_field(row, "biodiversity_attribute"))
-    ))
-
-    knitr::asis_output("\\vspace{1em}\n\n")
+    print(render_field_value_table(fields, values))
   }
 }
 ```
@@ -415,27 +372,26 @@ if (nrow(structured_df) == 0) {
 knitr::asis_output(paste0(
   "\\newpage\n",
   "\\begin{landscape}\n",
-  section_title("4. Model Outputs", landscape = TRUE)
+  section_title("4. MODEL OUTPUTS")
 ))
 ```
 
 ```{r section_4_table_1, results='asis', echo=FALSE, warning=FALSE}
 # ===============================
-# 4.1 Loss/Gain Calculation Results (per-attribute)
+# Table 1: per-attribute results
 # ===============================
-
-knitr::asis_output(paste0(
-  "\\noindent\n",
-  "\\begin{mytitleboxL}\n",
-  "\\large\\bfseries\\color{white} 4.1 Loss/Gain Calculation Results\n",
-  "\\end{mytitleboxL}\n\n"
-))
 
 df_clean <- structured_df
 
 if (nrow(df_clean) == 0) {
   knitr::asis_output("\\textit{No biodiversity attributes have been added to this model.}\n")
 } else {
+  # Shade whole Component groups (not alternating rows) so every attribute
+  # belonging to the same component reads as one visual block.
+  comp_seq <- df_clean$component_number
+  grp_change <- c(TRUE, comp_seq[-1] != comp_seq[-length(comp_seq)])
+  shade_rows <- which(cumsum(grp_change) %% 2 == 1)
+
   df_clean <- df_clean |>
     dplyr::mutate(across(where(is.character), esc_latex)) |>
     dplyr::mutate(
@@ -457,11 +413,15 @@ if (nrow(df_clean) == 0) {
     )
 
   # Fixed, wrapping column widths on the Type/Component/Attribute columns
-  # (rather than scale_down) keep long free-text values legible.
+  # (rather than scale_down) keep long free-text values legible. Row shading
+  # is applied per Component group instead of kableExtra's default alternating
+  # "striped" rows, so attributes belonging together read as one block.
   df_clean |>
     kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
-        caption = "Biodiversity Offset Results", row.names = FALSE) |>
-    kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) |>
+        caption = "Calculated biodiversity value at impact and offset site (loss/gain) and Net Present Biodiversity Value (NPBV) calculated for each biodiversity attribute. Mean values (central estimate of values) are given with 5\\textsuperscript{th} and 95\\textsuperscript{th} percentiles presented in brackets.",
+        row.names = FALSE, label = NA) |>
+    kable_styling(latex_options = "hold_position", font_size = 9) |>
+    row_spec(shade_rows, background = "gray!12") |>
     column_spec(1, width = "3.2cm") |>
     column_spec(2, width = "3.2cm") |>
     column_spec(3, width = "3.2cm") |>
@@ -476,13 +436,11 @@ if (nrow(df_clean) == 0) {
 # 4.2 Loss/Gain Calculation Summary (per-component)
 # ===============================
 
-knitr::asis_output(paste0(
-  "\\vspace{1em}\n\n",
-  "\\noindent\n",
-  "\\begin{mytitleboxL}\n",
-  "\\large\\bfseries\\color{white} 4.2 Loss/Gain Calculation Summary\n",
-  "\\end{mytitleboxL}\n\n"
-))
+# ===============================
+# Table 2: per-component summary
+# ===============================
+
+knitr::asis_output("\\vspace{1.5em}\n\n")
 
 df_clean <- params$summary_results_df
 
@@ -497,7 +455,15 @@ if (nrow(df_clean) == 0) {
 
   df_clean <- df_clean |>
     dplyr::left_join(numbering_lookup, by = c("Component" = "biodiversity_component")) |>
-    dplyr::mutate(across(where(is.character), esc_latex)) |>
+    dplyr::mutate(across(where(is.character), esc_latex))
+
+  # Shade whole Type groups (not alternating rows) so every component
+  # belonging to the same type reads as one visual block.
+  type_seq <- df_clean$type_number
+  grp_change <- c(TRUE, type_seq[-1] != type_seq[-length(type_seq)])
+  shade_rows <- which(cumsum(grp_change) %% 2 == 1)
+
+  df_clean <- df_clean |>
     dplyr::mutate(
       Impact = paste0(round(Impact_Mean, 2), " [", round(Impact_P5, 2), ", ", round(Impact_P95, 2), "]"),
       Offset = paste0(round(Offset_Mean, 2), " [", round(Offset_P5, 2), ", ", round(Offset_P95, 2), "]"),
@@ -512,14 +478,17 @@ if (nrow(df_clean) == 0) {
       Impact, Offset, NPBV
     )
 
-  # Note: no "striped" latex_option here — see Section 2's comment on why
-  # striping breaks collapse_rows()'s cell merging. Fixed, wrapping column
-  # widths on Type/Component (rather than scale_down) keep long free-text
-  # values legible instead of shrinking the whole table.
+  # Fixed, wrapping column widths on Type/Component (rather than scale_down)
+  # keep long free-text values legible instead of shrinking the whole table.
+  # Row shading is per Type group instead of alternating "striped" rows —
+  # applied before collapse_rows(), which otherwise can't merge cells whose
+  # \cellcolor{} wrapper differs row-to-row (see collapse_rows() note above).
   df_clean |>
     kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
-        caption = "Biodiversity Offset Scenario Results Summary", row.names = FALSE) |>
+        caption = "Averaged Net Present Biodiversity Value (NPBV) for each biodiversity component. Mean values (central estimate of values) are given with 5\\textsuperscript{th} and 95\\textsuperscript{th} percentiles presented in brackets.",
+        row.names = FALSE, label = NA) |>
     kable_styling(latex_options = "hold_position", font_size = 9) |>
+    row_spec(shade_rows, background = "gray!12") |>
     column_spec(1, width = "4.5cm") |>
     column_spec(2, width = "4.5cm") |>
     collapse_rows(columns = 1, valign = "top")
@@ -536,7 +505,7 @@ knitr::asis_output("\\end{landscape}\n")
 if (params$long_report) {
   knitr::asis_output(paste0(
     "\\newpage\n",
-    section_title("Appendix 1: Raw Model Inputs")
+    section_title("APPENDIX 1: MODEL INPUTS (raw data)")
   ))
 }
 ```
@@ -552,23 +521,18 @@ if (params$long_report) {
     for (i in seq_len(nrow(structured_df))) {
       row <- structured_df[i, , drop = FALSE]
 
-      header <- paste0(
-        get_field(row, "attribute_number"), " ", esc_latex(get_field(row, "biodiversity_attribute")),
-        " (", esc_latex(get_field(row, "biodiversity_component")),
-        " — ", esc_latex(get_field(row, "biodiversity_type")), ")"
-      )
-
-      knitr::asis_output(paste0(
-        "\\begin{landscape}\n",
-        "\\noindent\n",
-        "\\begin{mytitleboxL}\n",
-        "\\Large\\bfseries\\color{white} Appendix 1: Raw Model Inputs — ", header, "\n",
-        "\\end{mytitleboxL}\n\n"
-      ))
+      # No heading box above each attribute — Biodiversity Type/Component/
+      # Attribute are the first three rows of the overview table instead,
+      # matching Section 3's layout.
+      cat("\\begin{landscape}\n")
 
       overview_rows <- data.frame(
-        Field = c("Attribute Measure Unit", "Benchmark Value", "Distribution"),
+        Field = c("Biodiversity Type", "Biodiversity Component", "Biodiversity Attribute",
+                  "Attribute Measure Unit", "Benchmark Value", "Distribution"),
         Value = c(
+          paste0(get_field(row, "type_number"), " ", esc_latex(get_field(row, "biodiversity_type"))),
+          paste0(get_field(row, "component_number"), " ", esc_latex(get_field(row, "biodiversity_component"))),
+          paste0(get_field(row, "attribute_number"), " ", esc_latex(get_field(row, "biodiversity_attribute"))),
           fallback_text(get_field(row, "measurement_unit")),
           fallback_text(get_field(row, "benchmark_value")),
           fallback_text(get_field(row, "distribution"))
@@ -579,76 +543,68 @@ if (params$long_report) {
       dist_val <- get_field(row, "distribution")
 
       impact_area_val <- combine_value_unit(get_field(row, "impact_area"), get_field(row, "impact_area_unit"))
-      impact_site_rows <- rbind(
-        data.frame(
-          Field = c("Impact Area", "Impact Area – Data Type", "Impact Area – Data Type Description"),
-          Value = c(
-            fallback_text(impact_area_val),
-            fallback_text(get_field(row, "impact_area_data_type")),
-            fallback_text(switch(
-              if (is.na(get_field(row, "impact_area_data_type"))) "" else get_field(row, "impact_area_data_type"),
-              "Empirical"       = get_field(row, "impact_area_empirical_details"),
-              "Modelled"        = get_field(row, "impact_area_modelled_details"),
-              "Expert elicited" = get_field(row, "impact_area_expert_details"),
-              "Proxy value"     = get_field(row, "impact_area_proxy_details"),
-              NA_character_
-            ))
-          ),
-          stringsAsFactors = FALSE
+      impact_area_rows <- data.frame(
+        Field = c("Impact Area", "Impact Area – Data Type", "Impact Area – Data Type Description"),
+        Value = c(
+          fallback_text(impact_area_val),
+          fallback_text(get_field(row, "impact_area_data_type")),
+          fallback_text(switch(
+            if (is.na(get_field(row, "impact_area_data_type"))) "" else get_field(row, "impact_area_data_type"),
+            "Empirical"       = get_field(row, "impact_area_empirical_details"),
+            "Modelled"        = get_field(row, "impact_area_modelled_details"),
+            "Expert elicited" = get_field(row, "impact_area_expert_details"),
+            "Proxy value"     = get_field(row, "impact_area_proxy_details"),
+            NA_character_
+          ))
         ),
-        measurement_point_rows(
-          "Prior to Impact",
-          get_field(row, "prior_impact_data_type"),
-          get_field(row, "mx_prior_impact_mean"), get_field(row, "mx_prior_impact_sd"),
-          get_field(row, "impact_sample_size_prior"), get_field(row, "mx_prior_impact_var"),
-          dist_val,
-          get_field(row, "prior_impact_p_low"), get_field(row, "prior_impact_p50"),
-          get_field(row, "prior_impact_p_high"), get_field(row, "prior_impact_ci_level"),
-          get_field(row, "prior_impact_empirical_details"), get_field(row, "prior_impact_modelled_details"),
-          get_field(row, "prior_impact_expert_affiliations"), get_field(row, "prior_impact_proxy_details")
-        ),
-        measurement_point_rows(
-          "Post Impact",
-          get_field(row, "post_impact_data_type"),
-          get_field(row, "mx_post_impact_mean"), get_field(row, "mx_post_impact_sd"),
-          get_field(row, "impact_sample_size_post"), get_field(row, "mx_post_impact_var"),
-          dist_val,
-          get_field(row, "post_impact_p_low"), get_field(row, "post_impact_p50"),
-          get_field(row, "post_impact_p_high"), get_field(row, "post_impact_ci_level"),
-          get_field(row, "post_impact_empirical_details"), get_field(row, "post_impact_modelled_details"),
-          get_field(row, "post_impact_expert_affiliations"), get_field(row, "post_impact_proxy_details")
-        )
+        stringsAsFactors = FALSE
+      )
+      pre_impact_rows <- measurement_point_rows(
+        get_field(row, "prior_impact_data_type"),
+        get_field(row, "mx_prior_impact_mean"), get_field(row, "mx_prior_impact_sd"),
+        get_field(row, "impact_sample_size_prior"), get_field(row, "mx_prior_impact_var"),
+        dist_val,
+        get_field(row, "prior_impact_p_low"), get_field(row, "prior_impact_p50"),
+        get_field(row, "prior_impact_p_high"), get_field(row, "prior_impact_ci_level"),
+        get_field(row, "prior_impact_empirical_details"), get_field(row, "prior_impact_modelled_details"),
+        get_field(row, "prior_impact_expert_affiliations"), get_field(row, "prior_impact_proxy_details")
+      )
+      post_impact_rows <- measurement_point_rows(
+        get_field(row, "post_impact_data_type"),
+        get_field(row, "mx_post_impact_mean"), get_field(row, "mx_post_impact_sd"),
+        get_field(row, "impact_sample_size_post"), get_field(row, "mx_post_impact_var"),
+        dist_val,
+        get_field(row, "post_impact_p_low"), get_field(row, "post_impact_p50"),
+        get_field(row, "post_impact_p_high"), get_field(row, "post_impact_ci_level"),
+        get_field(row, "post_impact_empirical_details"), get_field(row, "post_impact_modelled_details"),
+        get_field(row, "post_impact_expert_affiliations"), get_field(row, "post_impact_proxy_details")
       )
 
       offset_area_val <- combine_value_unit(get_field(row, "offset_area"), get_field(row, "offset_area_unit"))
-      offset_site_rows <- rbind(
-        data.frame(
-          Field = "Offset Area",
-          Value = fallback_text(offset_area_val),
-          stringsAsFactors = FALSE
-        ),
-        measurement_point_rows(
-          "Prior to Offset",
-          get_field(row, "prior_offset_data_type"),
-          get_field(row, "mx_prior_offset_mean"), get_field(row, "mx_prior_offset_sd"),
-          get_field(row, "offset_sample_size_prior"), get_field(row, "mx_prior_offset_var"),
-          dist_val,
-          get_field(row, "prior_offset_p_low"), get_field(row, "prior_offset_p50"),
-          get_field(row, "prior_offset_p_high"), get_field(row, "prior_offset_ci_level"),
-          get_field(row, "prior_offset_empirical_details"), get_field(row, "prior_offset_modelled_details"),
-          get_field(row, "prior_offset_expert_affiliations"), get_field(row, "prior_offset_proxy_details")
-        ),
-        measurement_point_rows(
-          "Post Offset",
-          get_field(row, "post_offset_data_type"),
-          get_field(row, "mx_post_offset_mean"), get_field(row, "mx_post_offset_sd"),
-          get_field(row, "offset_sample_size_post"), get_field(row, "mx_post_offset_var"),
-          dist_val,
-          get_field(row, "post_offset_p_low"), get_field(row, "post_offset_p50"),
-          get_field(row, "post_offset_p_high"), get_field(row, "post_offset_ci_level"),
-          get_field(row, "post_offset_empirical_details"), get_field(row, "post_offset_modelled_details"),
-          get_field(row, "post_offset_expert_affiliations"), get_field(row, "post_offset_proxy_details")
-        )
+      offset_area_rows <- data.frame(
+        Field = "Offset Area",
+        Value = fallback_text(offset_area_val),
+        stringsAsFactors = FALSE
+      )
+      pre_offset_rows <- measurement_point_rows(
+        get_field(row, "prior_offset_data_type"),
+        get_field(row, "mx_prior_offset_mean"), get_field(row, "mx_prior_offset_sd"),
+        get_field(row, "offset_sample_size_prior"), get_field(row, "mx_prior_offset_var"),
+        dist_val,
+        get_field(row, "prior_offset_p_low"), get_field(row, "prior_offset_p50"),
+        get_field(row, "prior_offset_p_high"), get_field(row, "prior_offset_ci_level"),
+        get_field(row, "prior_offset_empirical_details"), get_field(row, "prior_offset_modelled_details"),
+        get_field(row, "prior_offset_expert_affiliations"), get_field(row, "prior_offset_proxy_details")
+      )
+      post_offset_rows <- measurement_point_rows(
+        get_field(row, "post_offset_data_type"),
+        get_field(row, "mx_post_offset_mean"), get_field(row, "mx_post_offset_sd"),
+        get_field(row, "offset_sample_size_post"), get_field(row, "mx_post_offset_var"),
+        dist_val,
+        get_field(row, "post_offset_p_low"), get_field(row, "post_offset_p50"),
+        get_field(row, "post_offset_p_high"), get_field(row, "post_offset_ci_level"),
+        get_field(row, "post_offset_empirical_details"), get_field(row, "post_offset_modelled_details"),
+        get_field(row, "post_offset_expert_affiliations"), get_field(row, "post_offset_proxy_details")
       )
 
       confidence_rows <- data.frame(
@@ -666,24 +622,31 @@ if (params$long_report) {
         stringsAsFactors = FALSE
       )
 
-      all_rows <- rbind(overview_rows, impact_site_rows, offset_site_rows, confidence_rows)
-      pack_index <- c(
-        "Attribute Overview" = nrow(overview_rows),
-        "Impact Site" = nrow(impact_site_rows),
-        "Offset Site" = nrow(offset_site_rows),
-        "Confidence, Time Horizon and Discount Rate" = nrow(confidence_rows)
-      )
+      # Each group is its own small table with a plain text heading in front,
+      # rather than one big table with kableExtra::pack_rows() subheadings —
+      # see the note on render_field_value_table() for why: pack_rows() edits
+      # rows by matching their rendered TEXT, and "Data Type" / "Empirical"
+      # etc. legitimately repeat between a Pre and Post measurement point.
+      print(render_field_value_table(overview_rows$Field, overview_rows$Value))
 
-      print(render_field_value_table(
-        all_rows$Field, all_rows$Value,
-        caption = paste0("Raw Model Inputs: ", get_field(row, "attribute_number"), " ",
-                          get_field(row, "biodiversity_attribute")),
-        pack_index = pack_index
-      ))
+      cat(subsection_title("Impact Site"))
+      print(render_field_value_table(impact_area_rows$Field, impact_area_rows$Value))
+      cat(fieldgroup_title("Pre impact"))
+      print(render_field_value_table(pre_impact_rows$Field, pre_impact_rows$Value))
+      cat(fieldgroup_title("Post impact"))
+      print(render_field_value_table(post_impact_rows$Field, post_impact_rows$Value))
 
-      knitr::asis_output(
-        "\\end{landscape}\n\\clearpage\n"
-      )
+      cat(subsection_title("Offset Site"))
+      print(render_field_value_table(offset_area_rows$Field, offset_area_rows$Value))
+      cat(fieldgroup_title("Pre offset"))
+      print(render_field_value_table(pre_offset_rows$Field, pre_offset_rows$Value))
+      cat(fieldgroup_title("Post offset"))
+      print(render_field_value_table(post_offset_rows$Field, post_offset_rows$Value))
+
+      cat(subsection_title("Confidence, Time Horizon and Discount Rate"))
+      print(render_field_value_table(confidence_rows$Field, confidence_rows$Value))
+
+      cat("\\end{landscape}\n\\clearpage\n")
     }
   }
 }
