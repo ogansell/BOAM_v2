@@ -1,0 +1,24 @@
+# Local/dev-only files — not needed by the deployed app.
+.claude/
+.git/
+.gitignore
+.Rproj.user/
+.RData
+.Rhistory
+.Ruserdata
+*.Rproj
+README.md
+CLAUDE.md
+
+# Confirmed-unused leftover files (not sourced/referenced anywhere in the app).
+report1.Rmd
+R/Global.R
+www/app_working_load_button.R
+
+# Dev/test example workbooks — not referenced by the app (the actual
+# downloadable template lives in www/ and is bundled normally).
+BOAM_case_study_upload.xlsx
+BOAM_example_upload.xlsx
+NET_GAIN_test_upload.xlsx
+Net_Gain_Upload_Example.xlsx
+NPBV_component_comparison.xlsx
