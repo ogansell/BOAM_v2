@@ -19,7 +19,7 @@ params:
   summary_results_df: !r data.frame()
   long_report: false
 
-header-includes: 
+header-includes:
   - \pagestyle{empty}
   - \usepackage{pdflscape}
   - \usepackage{xcolor}
@@ -88,307 +88,603 @@ header-includes:
     }
 ---
 
-```{r header_info, results='asis', echo=FALSE, warning=FALSE}
-cat(paste0(
-  "Report prepared by: \n \\newline \n", ifelse(nchar(params$name) > 0, params$name, "\\hspace{1cm}"), " \n \\newline \\newline \n",
-  "On: \n \\newline \n", ifelse(nchar(params$project_date) > 0, params$project_date, "\\hspace{1cm}"), " \n \\newline \\newline \n",
-  "This report summarizes the biodiversity offsetting proposal for ", params$project_name, ". \n \\newline \n"
-))
-
-```
-
-```{r all_overview_boxes, echo=FALSE, results='asis', warning=FALSE}
+```{r report_helpers, echo=FALSE, warning=FALSE, include=FALSE}
 # ===============================
-# Overview Boxes
-# ===============================
-
-knitr::asis_output(paste0(
-  "\\begin{samepage}\n",
-  "\\noindent\n",
-  "\\begin{mytitlebox}\n",
-  "\\Large\\bfseries\\color{white} Proposal Overview\n",
-  "\\end{mytitlebox}\n\n",
-  "\\begin{mycontentbox}\n",
-  params$proposal_overview, "\n",
-  "\\end{mycontentbox}\n",
-  "\\end{samepage}\n",
-  
-  "\\vspace{1em}\n\n",
-  
-  "\\begin{myfullbox}\n",
-  "\\noindent\n",
-  "\\begin{mytitlebox}\n",
-  "\\Large\\bfseries\\color{white} Ecological Context and Impact Summary\n",
-  "\\end{mytitlebox}\n\n",
-  "\\begin{mycontentbox}\n",
-  params$ecological_context, "\n",
-  "\\end{mycontentbox}\n\n",
-  "\\end{myfullbox}\n",
-  "\\vspace{1em}\n\n",
-  
-   "\\begin{myfullbox}\n",
-  "\\noindent\n",
-  "\\begin{mytitlebox}\n",
-  "\\Large\\bfseries\\color{white} Biodiversity Impacts Addressed Outside of the Model\n",
-  "\\end{mytitlebox}\n\n",
-  "\\begin{mycontentbox}\n",
-  params$biodiversity_impacts, "\n",
-  "\\end{mycontentbox}\n\n",
-  "\\end{myfullbox}\n",
-  "\\vspace{1em}\n\n",
-  
-  "\\begin{myfullbox}\n",
-  "\\noindent\n",
-  "\\begin{mytitlebox}\n",
-  "\\Large\\bfseries\\color{white} Offset Package\n",
-  "\\end{mytitlebox}\n\n",
-  "\\begin{mycontentbox}\n",
-  params$offset_package, "\n",
-  "\\end{mycontentbox}\n",
-  "\\end{myfullbox}\n"
-  
-))
-```
-
-
-```{r, results='asis', echo=FALSE, warning=FALSE}
-# ===============================
-# All Calculation Rows
+# Shared helpers used throughout the report
 # ===============================
 
 suppressPackageStartupMessages({
   library(knitr)
   library(kableExtra)
   library(dplyr)
+  library(tidyr)
+  library(purrr)
   library(stringr)
 })
 
-knitr::asis_output(paste0(
-  "\\newpage\n",
-  "\\begin{landscape}\n"
-))
-
-knitr::asis_output(paste0(
-  "\\noindent\n",
-  "\\begin{mytitleboxL}\n",
-  "\\Large\\bfseries\\color{white} Loss/Gain Calculation Results\n",
-  "\\end{mytitleboxL}\n\n"
-))
-
-# Prepare data with cleaned column names
-df_clean <- params$saved_results_df
-# Standardise column names: replace underscores and dots with spaces
-colnames(df_clean) <- gsub("[_.]", " ", colnames(df_clean))
-
-# ------------------------------
-# Identify and escape cells with special LaTeX characters
-# ------------------------------
-
-latex_specials <- c("%", "&", "_", "#", "{", "}", "$", "^", "~", "\\")
-has_special_chars <- function(x) {
-  Reduce(`|`, lapply(latex_specials, function(char) str_detect(x, fixed(char))))
+# ── LaTeX-escape any cell that contains special characters ──────────────────
+esc_latex <- function(x) {
+  x <- as.character(x)
+  latex_specials <- c("%", "&", "_", "#", "{", "}", "$", "^", "~", "\\")
+  has_special <- Reduce(`|`, lapply(latex_specials, function(ch) str_detect(x, fixed(ch))))
+  has_special[is.na(has_special)] <- FALSE
+  ifelse(has_special, cell_spec(x, "latex", escape = TRUE), x)
 }
 
-df_clean <- df_clean %>%
-  mutate(across(where(is.character), ~ ifelse(has_special_chars(.),
-                                              cell_spec(., "latex", escape = TRUE),
-                                              .)))
+# ── Safely pull a single field off a one-row data.frame/list, NA if absent ──
+# GUI-entered rows and Excel-upload-origin rows don't always share the same
+# column set (e.g. benchmark_justify / offset_actions_text are only populated
+# via bulk Excel upload today) — this keeps every section generic to that gap.
+get_field <- function(row, field) {
+  if (!(field %in% names(row))) return(NA_character_)
+  val <- row[[field]]
+  if (length(val) == 0) return(NA_character_)
+  val <- val[[1]]
+  if (is.na(val)) return(NA_character_)
+  val
+}
 
-# ---- Now create LaTeX-containing columns ----
-df_clean <- df_clean |>
-  dplyr::mutate(
-    Impact = paste0(round(.data[["Impact Mean"]], 2), " [",
-                    round(.data[["Impact P5"]], 2), ", ",
-                    round(.data[["Impact P95"]], 2), "]"),
-    Offset = paste0(round(.data[["Offset Mean"]], 2), " [",
-                    round(.data[["Offset P5"]], 2), ", ",
-                    round(.data[["Offset P95"]], 2), "]"),
-    NPBV   = ifelse(.data[["NPBV P5"]] < 0,
-                    cell_spec(
-                      paste0(round(.data[["NPBV Mean"]], 2), " [",
-                             round(.data[["NPBV P5"]], 2), ", ",
-                             round(.data[["NPBV P95"]], 2), "]"),
-                      "latex", color = "red"),
-                    paste0(round(.data[["NPBV Mean"]], 2), " [",
-                           round(.data[["NPBV P5"]], 2), ", ",
-                           round(.data[["NPBV P95"]], 2), "]"))
-  ) |>
-  dplyr::select(
-    `Biodiversity Type`                 = `biodiversity type`,
-    `Biodiversity Component`            = `biodiversity component`,
-    `Biodiversity Attribute`            = `biodiversity attribute`,
-    `Measurement Unit`                  = `measurement unit`,
-    `Biodiversity Value at Impact Site` = `Impact`,
-    `Biodiversity Value at Offset Site` = `Offset`,
-    NPBV
+# ── Blank/missing value fallback used throughout the template ───────────────
+fallback_text <- function(x) {
+  if (is.null(x) || length(x) == 0 || is.na(x) || !nzchar(trimws(as.character(x)))) {
+    return("\\textit{Information not provided}")
+  }
+  esc_latex(as.character(x))
+}
+
+# Combine a value + unit into one display string (e.g. "12.5 ha")
+combine_value_unit <- function(value, unit) {
+  if (is.null(value) || is.na(value) || !nzchar(trimws(as.character(value)))) {
+    return(NA_character_)
+  }
+  if (is.null(unit) || is.na(unit) || !nzchar(trimws(as.character(unit)))) {
+    return(as.character(value))
+  }
+  paste0(value, " ", unit)
+}
+
+# ── Section title boxes (portrait / landscape) ───────────────────────────────
+section_title <- function(text, landscape = FALSE) {
+  env <- if (landscape) "mytitleboxL" else "mytitlebox"
+  paste0(
+    "\\noindent\n\\begin{", env, "}\n",
+    "\\Large\\bfseries\\color{white} ", text, "\n",
+    "\\end{", env, "}\n\n"
   )
-
-
-
-# ------------------------------
-# Build LaTeX table
-# ------------------------------
-df_clean |>
-  kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
-      caption = "Biodiversity Offset Results", row.names = FALSE) |>
-  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9)
-
-
-knitr::asis_output("\\end{landscape}")
-
-
-```
-
-
-```{r, results='asis', echo=FALSE, warning=FALSE}
-# ===============================
-# Summary Table
-# ===============================
-
-suppressPackageStartupMessages({
-  library(knitr)
-  library(kableExtra)
-  library(dplyr)
-  library(stringr)
-})
-
-knitr::asis_output(paste0(
-  "\\newpage\n",
-  "\\begin{landscape}\n"
-))
-
-knitr::asis_output(paste0(
-  "\\noindent\n",
-  "\\begin{mytitleboxL}\n",
-  "\\Large\\bfseries\\color{white} Loss/Gain Calculation Summary\n",
-  "\\end{mytitleboxL}\n\n"
-))
-
-# Prepare data
-df_clean <- params$summary_results_df
-colnames(df_clean) <- gsub("[_.]", " ", colnames(df_clean))
-
-# Identify LaTeX special characters
-latex_specials <- c("%", "&", "_", "#", "{", "}", "$", "^", "~", "\\")
-has_special_chars <- function(x) {
-  Reduce(`|`, lapply(latex_specials, function(char) str_detect(x, fixed(char))))
 }
 
-# Escape character columns that contain special LaTeX characters
-df_clean <- df_clean %>%
-  mutate(across(where(is.character), ~ifelse(has_special_chars(.x),
-                                             cell_spec(.x, "latex", escape = TRUE),
-                                             .x)))
+# ── Auto-number Type -> Component -> Attribute (1., 1.1, 1.1a...) ───────────
+# Numbers are generated fresh at render time from row order/grouping in
+# saved_results_df — they are a display convenience only, not a stable ID.
+# Also reorders rows so each Type/Component's rows are contiguous, which is
+# required for kableExtra::collapse_rows() to merge cells correctly.
+add_structure_numbering <- function(df) {
+  if (is.null(df) || nrow(df) == 0) {
+    df$type_number <- character()
+    df$component_number <- character()
+    df$attribute_number <- character()
+    return(df)
+  }
 
-# Merge Mean + P5/P95 into display columns, with red highlighting for NPBV P5 < 0
-df_clean <- df_clean |>
-  dplyr::mutate(
-    Impact = paste0(round(.data[["Impact Mean"]], 2), " [",
-                    round(.data[["Impact P5"]], 2), ", ",
-                    round(.data[["Impact P95"]], 2), "]"),
-    Offset = paste0(round(.data[["Offset Mean"]], 2), " [",
-                    round(.data[["Offset P5"]], 2), ", ",
-                    round(.data[["Offset P95"]], 2), "]"),
-    NPBV   = ifelse(.data[["NPBV P5"]] < 0,
-                    cell_spec(paste0(round(.data[["NPBV Mean"]], 2), " [",
-                                    round(.data[["NPBV P5"]], 2), ", ",
-                                    round(.data[["NPBV P95"]], 2), "]"),
-                              "latex", color = "red", bold = FALSE),
-                    paste0(round(.data[["NPBV Mean"]], 2), " [",
-                           round(.data[["NPBV P5"]], 2), ", ",
-                           round(.data[["NPBV P95"]], 2), "]"))
-  ) |>
-  dplyr::select(-dplyr::matches("Mean|P5|P95"))
+  type_levels <- unique(df$biodiversity_type)
+  df$type_idx <- match(df$biodiversity_type, type_levels)
 
-# Build LaTeX table
-df_clean |>
-  kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
-      caption = "Biodiversity Offset Scenario Results Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position"), font_size = 9)
+  comp_key <- paste(df$biodiversity_type, df$biodiversity_component, sep = "|||")
+  comp_levels <- unique(comp_key)
+  comp_level_type <- vapply(comp_levels, function(k) strsplit(k, "|||", fixed = TRUE)[[1]][1], character(1))
+  comp_idx_by_level <- ave(seq_along(comp_levels), comp_level_type, FUN = seq_along)
+  names(comp_idx_by_level) <- comp_levels
+  df$comp_idx <- unname(comp_idx_by_level[comp_key])
 
-knitr::asis_output("\\end{landscape}")
+  df$attr_idx <- ave(seq_len(nrow(df)), comp_key, FUN = seq_along)
 
+  df$type_number      <- paste0(df$type_idx, ".")
+  df$component_number <- paste0(df$type_idx, ".", df$comp_idx)
+  df$attribute_number <- paste0(df$component_number, letters[df$attr_idx])
 
-```
-
-
-
-```{r, results='asis', echo=FALSE, warning=FALSE}
-
-# ===============================
-# Detailed Tables Header Box
-# ===============================
-
-if(params$long_report) { 
-  
-  knitr::asis_output(paste0(
-    "\\noindent\n",
-    "\\begin{mytitleboxL}\n",
-    "\\Large\\bfseries\\color{white} Appendix A: Detailed Results\n",
-    "\\end{mytitleboxL}\n\n"
-  ))
+  df[order(df$type_idx, df$comp_idx, df$attr_idx), ]
 }
 
-```
+# ── Render a Field | Value table (the recurring narrow-table pattern) ───────
+render_field_value_table <- function(fields, values, caption, pack_index = NULL) {
+  tbl <- tibble::tibble(Field = fields, Value = values) |>
+    kbl(booktabs = TRUE, escape = FALSE, caption = caption, label = NA,
+        row.names = FALSE, longtable = TRUE) |>
+    kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) |>
+    column_spec(1, width = "5cm") |>
+    column_spec(2, width = "10cm")
 
+  if (!is.null(pack_index)) {
+    tbl <- tbl |> pack_rows(index = pack_index)
+  }
 
+  tbl
+}
 
-```{r, results='asis', echo=FALSE, warning=FALSE}
-# ===============================
-# Detailed Tables
-# ===============================
+# ── One measurement point's rows (data type, description, mean + SD/n/var) ──
+measurement_point_rows <- function(label, data_type, mean, sd, poisson_n, nb_var,
+                                    dist, p_low, p50, p_high, ci_level,
+                                    empirical_d, modelled_d, expert_d, proxy_d) {
+  dt_val <- if (is.null(data_type) || is.na(data_type) || !nzchar(trimws(data_type))) {
+    NA_character_
+  } else {
+    data_type
+  }
 
-if(params$long_report) { 
-  
-  suppressPackageStartupMessages({
-    library(knitr)
-    library(kableExtra)
-    library(dplyr)
-    library(tidyr)
-    library(purrr)
-  })
-  
-  df_clean <- params$saved_results_df
-  
-  # Tell LaTeX to make table labels and captions bold
-  knitr::asis_output("\\captionsetup[table]{labelfont=bf,textfont=bf}\n")
-  
-  for (i in seq_len(nrow(df_clean))) {
-    
-    row_data <- df_clean[i, ] |>
-      mutate(across(everything(), as.character)) 
-    
-    row_data <- as_tibble(cbind(nms = names(row_data), t(row_data)))
-    colnames(row_data) <- c("Parameter", "Value")
-    
-    knitr::asis_output(paste0(
-      "\\begin{landscape}\n",
-      "\\noindent\n",
-      "\\begin{mytitleboxL}\n",
-      "\\Large\\bfseries\\color{white} Appendix A: Detailed Results (Row ", i, ")\n",
-      "\\end{mytitleboxL}\n\n"
-    ))
-    
-    print(
-      row_data |>
-        kbl(booktabs = TRUE, 
-            caption = paste0("Biodiversity Offset Detailed Results: Calculation ", i),
-            row.names = FALSE,
-            longtable = TRUE) %>%
-        kable_styling(latex_options = c("striped"), font_size = 9) %>%
-        column_spec(1, width = "4cm") %>%
-        column_spec(2, width = "10cm")
-    )
-    
-    
-    knitr::asis_output(
-      "\\end{landscape}\n\\clearpage\n"
+  desc <- if (is.na(dt_val)) {
+    NA_character_
+  } else {
+    switch(dt_val,
+      "Empirical"        = empirical_d,
+      "Modelled"         = modelled_d,
+      "Expert elicited"  = expert_d,
+      "Proxy value"      = proxy_d,
+      NA_character_
     )
   }
-  
+
+  rows <- data.frame(
+    Field = c(paste0(label, " – Data Type"), paste0(label, " – Data Type Description")),
+    Value = c(fallback_text(data_type), fallback_text(desc)),
+    stringsAsFactors = FALSE
+  )
+
+  if (!is.na(dt_val) && dt_val == "Expert elicited") {
+    stat_rows <- data.frame(
+      Field = c(paste0(label, " – Elicited Low Estimate"),
+                paste0(label, " – Elicited Median Estimate"),
+                paste0(label, " – Elicited High Estimate"),
+                paste0(label, " – Elicited CI Level")),
+      Value = c(fallback_text(p_low), fallback_text(p50), fallback_text(p_high), fallback_text(ci_level)),
+      stringsAsFactors = FALSE
+    )
+  } else if (!is.null(dist) && !is.na(dist) && dist == "Poisson") {
+    stat_rows <- data.frame(
+      Field = c(paste0(label, " – Mean"), paste0(label, " – Sample Size")),
+      Value = c(fallback_text(mean), fallback_text(poisson_n)),
+      stringsAsFactors = FALSE
+    )
+  } else if (!is.null(dist) && !is.na(dist) && dist == "Negative Binomial") {
+    stat_rows <- data.frame(
+      Field = c(paste0(label, " – Mean"), paste0(label, " – Variance")),
+      Value = c(fallback_text(mean), fallback_text(nb_var)),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    stat_rows <- data.frame(
+      Field = c(paste0(label, " – Mean"), paste0(label, " – SD")),
+      Value = c(fallback_text(mean), fallback_text(sd)),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  rbind(rows, stat_rows)
 }
 
-
-
+# Structure used across Section 2, Section 3, Table 1 and Appendix 1 so every
+# attribute gets the exact same number and the exact same display order.
+structured_df <- add_structure_numbering(params$saved_results_df)
 ```
 
+```{r header_info, results='asis', echo=FALSE, warning=FALSE}
+knitr::asis_output(paste0(
+  # \bgroup/\egroup (not bare `{`/`}`) — results='asis' content still passes
+  # through pandoc's markdown-to-latex conversion, which escapes literal
+  # braces that aren't part of a recognized \begin{}...\end{} block, which
+  # would otherwise leave this formatting unscoped for the rest of the report.
+  "\\bgroup\\Large\\bfseries ", fallback_text(params$project_name), "\\egroup\n\\newline\\newline\n",
+  "Report generated on: ", fallback_text(params$project_date), "\n\\newline\n",
+  "By: ", fallback_text(params$name), "\n\\newline\n"
+))
+```
+
+```{r section_1_project_summary, echo=FALSE, results='asis', warning=FALSE}
+# ===============================
+# 1. Project Summary
+# ===============================
+
+emit_summary_field <- function(number, title, value) {
+  paste0(
+    "\\begin{myfullbox}\n",
+    "\\noindent\n",
+    "\\begin{mytitlebox}\n",
+    "\\Large\\bfseries\\color{white} ", number, " ", title, "\n",
+    "\\end{mytitlebox}\n\n",
+    "\\begin{mycontentbox}\n",
+    fallback_text(value), "\n",
+    "\\end{mycontentbox}\n\n",
+    "\\end{myfullbox}\n",
+    "\\vspace{1em}\n\n"
+  )
+}
+
+knitr::asis_output(paste0(
+  section_title("1. Project Summary"),
+  "\\vspace{0.5em}\n\n",
+  emit_summary_field("1.1", "Proposal Overview", params$proposal_overview),
+  emit_summary_field("1.2", "Ecological Context and Impact Summary", params$ecological_context),
+  emit_summary_field("1.3", "Biodiversity Impacts Addressed Outside of the Model", params$biodiversity_impacts),
+  emit_summary_field("1.4", "Summary Description of Proposed Offset Package", params$offset_package)
+))
+```
+
+```{r section_2_model_structure, results='asis', echo=FALSE, warning=FALSE}
+# ===============================
+# 2. Model Structure
+# ===============================
+
+knitr::asis_output(paste0(
+  "\\newpage\n",
+  section_title("2. Model Structure")
+))
+
+if (nrow(structured_df) == 0) {
+  knitr::asis_output("\\textit{No biodiversity attributes have been added to this model.}\n")
+} else {
+  struct_table <- structured_df |>
+    dplyr::transmute(
+      Type      = paste0(type_number, " ", esc_latex(biodiversity_type)),
+      Component = paste0(component_number, " ", esc_latex(biodiversity_component)),
+      Attribute = paste0(attribute_number, " ", esc_latex(biodiversity_attribute))
+    )
+
+  # Note: no "striped" latex_option here — row striping wraps alternating
+  # cells in \cellcolor{}, which makes otherwise-identical merged-cell text
+  # differ row-to-row and silently defeats collapse_rows()'s cell merging.
+  # Fixed, wrapping column widths (rather than scale_down) keep long free-text
+  # Type/Component/Attribute values legible instead of shrinking the table.
+  struct_table |>
+    kbl(booktabs = TRUE, escape = FALSE, caption = "Model Structure", row.names = FALSE) |>
+    kable_styling(latex_options = "hold_position", font_size = 9) |>
+    column_spec(1, width = "5.3cm") |>
+    column_spec(2, width = "5.3cm") |>
+    column_spec(3, width = "5.3cm") |>
+    collapse_rows(columns = 1:2, valign = "top")
+}
+```
+
+```{r section_3_model_parameters, results='asis', echo=FALSE, warning=FALSE}
+# ===============================
+# 3. Model Parameters & Supporting Information
+# ===============================
+
+knitr::asis_output(paste0(
+  "\\newpage\n",
+  section_title("3. Model Parameters \\& Supporting Information")
+))
+
+if (nrow(structured_df) == 0) {
+  knitr::asis_output("\\textit{No biodiversity attributes have been added to this model.}\n")
+} else {
+  for (i in seq_len(nrow(structured_df))) {
+    row <- structured_df[i, , drop = FALSE]
+
+    header <- paste0(
+      get_field(row, "attribute_number"), " ", esc_latex(get_field(row, "biodiversity_attribute")),
+      " (", esc_latex(get_field(row, "biodiversity_component")),
+      " — ", esc_latex(get_field(row, "biodiversity_type")), ")"
+    )
+
+    knitr::asis_output(section_title(header))
+
+    offset_area_val <- combine_value_unit(get_field(row, "offset_area"), get_field(row, "offset_area_unit"))
+
+    fields <- c(
+      "Attribute Measure Unit",
+      "Benchmark Value",
+      "Justification for Benchmark Value",
+      "Proposed Offset Area",
+      "Proposed Offset Action(s)",
+      "Confidence in Proposed Offset Action",
+      "Justification for Confidence",
+      "Time till End (Years)",
+      "Justification for Time Horizon",
+      "Discount Rate (\\%)",
+      "Justification for Discount Rate"
+    )
+    values <- c(
+      fallback_text(get_field(row, "measurement_unit")),
+      fallback_text(get_field(row, "benchmark_value")),
+      fallback_text(get_field(row, "benchmark_justify")),
+      fallback_text(offset_area_val),
+      fallback_text(get_field(row, "offset_actions_text")),
+      fallback_text(get_field(row, "selected_confidence")),
+      fallback_text(get_field(row, "offset_confidence_justify")),
+      fallback_text(get_field(row, "time_till_end")),
+      fallback_text(get_field(row, "offset_time_till_end_justify")),
+      fallback_text(get_field(row, "discount_rate")),
+      fallback_text(get_field(row, "offset_discount_rate_justify"))
+    )
+
+    print(render_field_value_table(
+      fields, values,
+      caption = paste0("Model Parameters: ", get_field(row, "attribute_number"), " ",
+                        get_field(row, "biodiversity_attribute"))
+    ))
+
+    knitr::asis_output("\\vspace{1em}\n\n")
+  }
+}
+```
+
+```{r section_4_model_outputs_header, results='asis', echo=FALSE, warning=FALSE}
+# ===============================
+# 4. Model Outputs
+# ===============================
+
+knitr::asis_output(paste0(
+  "\\newpage\n",
+  "\\begin{landscape}\n",
+  section_title("4. Model Outputs", landscape = TRUE)
+))
+```
+
+```{r section_4_table_1, results='asis', echo=FALSE, warning=FALSE}
+# ===============================
+# 4.1 Loss/Gain Calculation Results (per-attribute)
+# ===============================
+
+knitr::asis_output(paste0(
+  "\\noindent\n",
+  "\\begin{mytitleboxL}\n",
+  "\\large\\bfseries\\color{white} 4.1 Loss/Gain Calculation Results\n",
+  "\\end{mytitleboxL}\n\n"
+))
+
+df_clean <- structured_df
+
+if (nrow(df_clean) == 0) {
+  knitr::asis_output("\\textit{No biodiversity attributes have been added to this model.}\n")
+} else {
+  df_clean <- df_clean |>
+    dplyr::mutate(across(where(is.character), esc_latex)) |>
+    dplyr::mutate(
+      Impact = paste0(round(Impact_Mean, 2), " [", round(Impact_P5, 2), ", ", round(Impact_P95, 2), "]"),
+      Offset = paste0(round(Offset_Mean, 2), " [", round(Offset_P5, 2), ", ", round(Offset_P95, 2), "]"),
+      NPBV   = ifelse(NPBV_P5 < 0,
+                      cell_spec(paste0(round(NPBV_Mean, 2), " [", round(NPBV_P5, 2), ", ", round(NPBV_P95, 2), "]"),
+                                "latex", color = "red"),
+                      paste0(round(NPBV_Mean, 2), " [", round(NPBV_P5, 2), ", ", round(NPBV_P95, 2), "]"))
+    ) |>
+    dplyr::transmute(
+      `Biodiversity Type`                 = paste0(type_number, " ", biodiversity_type),
+      `Biodiversity Component`            = paste0(component_number, " ", biodiversity_component),
+      `Biodiversity Attribute`            = paste0(attribute_number, " ", biodiversity_attribute),
+      `Measurement Unit`                  = measurement_unit,
+      `Biodiversity Value at Impact Site` = Impact,
+      `Biodiversity Value at Offset Site` = Offset,
+      NPBV
+    )
+
+  # Fixed, wrapping column widths on the Type/Component/Attribute columns
+  # (rather than scale_down) keep long free-text values legible.
+  df_clean |>
+    kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
+        caption = "Biodiversity Offset Results", row.names = FALSE) |>
+    kable_styling(latex_options = c("striped", "hold_position"), font_size = 9) |>
+    column_spec(1, width = "3.2cm") |>
+    column_spec(2, width = "3.2cm") |>
+    column_spec(3, width = "3.2cm") |>
+    column_spec(4, width = "1.8cm") |>
+    column_spec(5, width = "2.5cm") |>
+    column_spec(6, width = "2.5cm")
+}
+```
+
+```{r section_4_table_2, results='asis', echo=FALSE, warning=FALSE}
+# ===============================
+# 4.2 Loss/Gain Calculation Summary (per-component)
+# ===============================
+
+knitr::asis_output(paste0(
+  "\\vspace{1em}\n\n",
+  "\\noindent\n",
+  "\\begin{mytitleboxL}\n",
+  "\\large\\bfseries\\color{white} 4.2 Loss/Gain Calculation Summary\n",
+  "\\end{mytitleboxL}\n\n"
+))
+
+df_clean <- params$summary_results_df
+
+if (nrow(df_clean) == 0) {
+  knitr::asis_output("\\textit{No biodiversity attributes have been added to this model.}\n")
+} else {
+  # Attach the same Type/Component numbering used in Section 2, matched by
+  # Component name (compute_summary() itself groups by Component name alone).
+  numbering_lookup <- structured_df |>
+    dplyr::distinct(biodiversity_component, .keep_all = TRUE) |>
+    dplyr::select(biodiversity_component, type_number, component_number)
+
+  df_clean <- df_clean |>
+    dplyr::left_join(numbering_lookup, by = c("Component" = "biodiversity_component")) |>
+    dplyr::mutate(across(where(is.character), esc_latex)) |>
+    dplyr::mutate(
+      Impact = paste0(round(Impact_Mean, 2), " [", round(Impact_P5, 2), ", ", round(Impact_P95, 2), "]"),
+      Offset = paste0(round(Offset_Mean, 2), " [", round(Offset_P5, 2), ", ", round(Offset_P95, 2), "]"),
+      NPBV   = ifelse(NPBV_P5 < 0,
+                      cell_spec(paste0(round(NPBV_Mean, 2), " [", round(NPBV_P5, 2), ", ", round(NPBV_P95, 2), "]"),
+                                "latex", color = "red", bold = FALSE),
+                      paste0(round(NPBV_Mean, 2), " [", round(NPBV_P5, 2), ", ", round(NPBV_P95, 2), "]"))
+    ) |>
+    dplyr::transmute(
+      `Biodiversity Type`      = paste0(type_number, " ", Biodiversity_Type),
+      `Biodiversity Component` = paste0(component_number, " ", Component),
+      Impact, Offset, NPBV
+    )
+
+  # Note: no "striped" latex_option here — see Section 2's comment on why
+  # striping breaks collapse_rows()'s cell merging. Fixed, wrapping column
+  # widths on Type/Component (rather than scale_down) keep long free-text
+  # values legible instead of shrinking the whole table.
+  df_clean |>
+    kbl(booktabs = TRUE, escape = FALSE,  # escape = FALSE required for cell_spec
+        caption = "Biodiversity Offset Scenario Results Summary", row.names = FALSE) |>
+    kable_styling(latex_options = "hold_position", font_size = 9) |>
+    column_spec(1, width = "4.5cm") |>
+    column_spec(2, width = "4.5cm") |>
+    collapse_rows(columns = 1, valign = "top")
+}
+
+knitr::asis_output("\\end{landscape}\n")
+```
+
+```{r appendix_1_header, results='asis', echo=FALSE, warning=FALSE}
+# ===============================
+# Appendix 1: Raw Model Inputs
+# ===============================
+
+if (params$long_report) {
+  knitr::asis_output(paste0(
+    "\\newpage\n",
+    section_title("Appendix 1: Raw Model Inputs")
+  ))
+}
+```
+
+```{r appendix_1_body, results='asis', echo=FALSE, warning=FALSE}
+if (params$long_report) {
+
+  knitr::asis_output("\\captionsetup[table]{labelfont=bf,textfont=bf}\n")
+
+  if (nrow(structured_df) == 0) {
+    knitr::asis_output("\\textit{No biodiversity attributes have been added to this model.}\n")
+  } else {
+    for (i in seq_len(nrow(structured_df))) {
+      row <- structured_df[i, , drop = FALSE]
+
+      header <- paste0(
+        get_field(row, "attribute_number"), " ", esc_latex(get_field(row, "biodiversity_attribute")),
+        " (", esc_latex(get_field(row, "biodiversity_component")),
+        " — ", esc_latex(get_field(row, "biodiversity_type")), ")"
+      )
+
+      knitr::asis_output(paste0(
+        "\\begin{landscape}\n",
+        "\\noindent\n",
+        "\\begin{mytitleboxL}\n",
+        "\\Large\\bfseries\\color{white} Appendix 1: Raw Model Inputs — ", header, "\n",
+        "\\end{mytitleboxL}\n\n"
+      ))
+
+      overview_rows <- data.frame(
+        Field = c("Attribute Measure Unit", "Benchmark Value", "Distribution"),
+        Value = c(
+          fallback_text(get_field(row, "measurement_unit")),
+          fallback_text(get_field(row, "benchmark_value")),
+          fallback_text(get_field(row, "distribution"))
+        ),
+        stringsAsFactors = FALSE
+      )
+
+      dist_val <- get_field(row, "distribution")
+
+      impact_area_val <- combine_value_unit(get_field(row, "impact_area"), get_field(row, "impact_area_unit"))
+      impact_site_rows <- rbind(
+        data.frame(
+          Field = c("Impact Area", "Impact Area – Data Type", "Impact Area – Data Type Description"),
+          Value = c(
+            fallback_text(impact_area_val),
+            fallback_text(get_field(row, "impact_area_data_type")),
+            fallback_text(switch(
+              if (is.na(get_field(row, "impact_area_data_type"))) "" else get_field(row, "impact_area_data_type"),
+              "Empirical"       = get_field(row, "impact_area_empirical_details"),
+              "Modelled"        = get_field(row, "impact_area_modelled_details"),
+              "Expert elicited" = get_field(row, "impact_area_expert_details"),
+              "Proxy value"     = get_field(row, "impact_area_proxy_details"),
+              NA_character_
+            ))
+          ),
+          stringsAsFactors = FALSE
+        ),
+        measurement_point_rows(
+          "Prior to Impact",
+          get_field(row, "prior_impact_data_type"),
+          get_field(row, "mx_prior_impact_mean"), get_field(row, "mx_prior_impact_sd"),
+          get_field(row, "impact_sample_size_prior"), get_field(row, "mx_prior_impact_var"),
+          dist_val,
+          get_field(row, "prior_impact_p_low"), get_field(row, "prior_impact_p50"),
+          get_field(row, "prior_impact_p_high"), get_field(row, "prior_impact_ci_level"),
+          get_field(row, "prior_impact_empirical_details"), get_field(row, "prior_impact_modelled_details"),
+          get_field(row, "prior_impact_expert_affiliations"), get_field(row, "prior_impact_proxy_details")
+        ),
+        measurement_point_rows(
+          "Post Impact",
+          get_field(row, "post_impact_data_type"),
+          get_field(row, "mx_post_impact_mean"), get_field(row, "mx_post_impact_sd"),
+          get_field(row, "impact_sample_size_post"), get_field(row, "mx_post_impact_var"),
+          dist_val,
+          get_field(row, "post_impact_p_low"), get_field(row, "post_impact_p50"),
+          get_field(row, "post_impact_p_high"), get_field(row, "post_impact_ci_level"),
+          get_field(row, "post_impact_empirical_details"), get_field(row, "post_impact_modelled_details"),
+          get_field(row, "post_impact_expert_affiliations"), get_field(row, "post_impact_proxy_details")
+        )
+      )
+
+      offset_area_val <- combine_value_unit(get_field(row, "offset_area"), get_field(row, "offset_area_unit"))
+      offset_site_rows <- rbind(
+        data.frame(
+          Field = "Offset Area",
+          Value = fallback_text(offset_area_val),
+          stringsAsFactors = FALSE
+        ),
+        measurement_point_rows(
+          "Prior to Offset",
+          get_field(row, "prior_offset_data_type"),
+          get_field(row, "mx_prior_offset_mean"), get_field(row, "mx_prior_offset_sd"),
+          get_field(row, "offset_sample_size_prior"), get_field(row, "mx_prior_offset_var"),
+          dist_val,
+          get_field(row, "prior_offset_p_low"), get_field(row, "prior_offset_p50"),
+          get_field(row, "prior_offset_p_high"), get_field(row, "prior_offset_ci_level"),
+          get_field(row, "prior_offset_empirical_details"), get_field(row, "prior_offset_modelled_details"),
+          get_field(row, "prior_offset_expert_affiliations"), get_field(row, "prior_offset_proxy_details")
+        ),
+        measurement_point_rows(
+          "Post Offset",
+          get_field(row, "post_offset_data_type"),
+          get_field(row, "mx_post_offset_mean"), get_field(row, "mx_post_offset_sd"),
+          get_field(row, "offset_sample_size_post"), get_field(row, "mx_post_offset_var"),
+          dist_val,
+          get_field(row, "post_offset_p_low"), get_field(row, "post_offset_p50"),
+          get_field(row, "post_offset_p_high"), get_field(row, "post_offset_ci_level"),
+          get_field(row, "post_offset_empirical_details"), get_field(row, "post_offset_modelled_details"),
+          get_field(row, "post_offset_expert_affiliations"), get_field(row, "post_offset_proxy_details")
+        )
+      )
+
+      confidence_rows <- data.frame(
+        Field = c("Confidence in Proposed Offset Action", "Justification for Confidence",
+                  "Time till End (Years)", "Justification for Time Horizon",
+                  "Discount Rate (\\%)", "Justification for Discount Rate"),
+        Value = c(
+          fallback_text(get_field(row, "selected_confidence")),
+          fallback_text(get_field(row, "offset_confidence_justify")),
+          fallback_text(get_field(row, "time_till_end")),
+          fallback_text(get_field(row, "offset_time_till_end_justify")),
+          fallback_text(get_field(row, "discount_rate")),
+          fallback_text(get_field(row, "offset_discount_rate_justify"))
+        ),
+        stringsAsFactors = FALSE
+      )
+
+      all_rows <- rbind(overview_rows, impact_site_rows, offset_site_rows, confidence_rows)
+      pack_index <- c(
+        "Attribute Overview" = nrow(overview_rows),
+        "Impact Site" = nrow(impact_site_rows),
+        "Offset Site" = nrow(offset_site_rows),
+        "Confidence, Time Horizon and Discount Rate" = nrow(confidence_rows)
+      )
+
+      print(render_field_value_table(
+        all_rows$Field, all_rows$Value,
+        caption = paste0("Raw Model Inputs: ", get_field(row, "attribute_number"), " ",
+                          get_field(row, "biodiversity_attribute")),
+        pack_index = pack_index
+      ))
+
+      knitr::asis_output(
+        "\\end{landscape}\n\\clearpage\n"
+      )
+    }
+  }
+}
+```

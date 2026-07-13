@@ -292,6 +292,7 @@ compute_summary_df <- function(df, fmt_pi, npbv_colorize, draw_store = NULL) {
 compute_summary <- function(df, draw_store = NULL) {
   if (is.null(df) || !nrow(df)) {
     return(data.frame(
+      Biodiversity_Type = character(),
       Component   = character(),
       Impact_Mean = numeric(), Impact_P5 = numeric(), Impact_P95 = numeric(),
       Offset_Mean = numeric(), Offset_P5 = numeric(), Offset_P95 = numeric(),
@@ -330,6 +331,10 @@ compute_summary <- function(df, draw_store = NULL) {
     comp <- components[ci]
     rows <- df[df$biodiversity_component == comp, , drop = FALSE]
     row_indices <- rows$.row_idx
+    # First-seen Type for this Component name (compute_summary groups by
+    # Component name alone, so this mirrors that same conflation if a
+    # Component name were ever reused across two different Types)
+    comp_type <- rows$biodiversity_type[1]
 
     # Check if ALL rows in this component have draws
     all_have_draws <- all(vapply(row_indices, has_draws, logical(1)))
@@ -353,6 +358,7 @@ compute_summary <- function(df, draw_store = NULL) {
       comp_npbv   <- colMeans(npbv_mat)
 
       out_list[[ci]] <- data.frame(
+        Biodiversity_Type = comp_type,
         Component   = comp,
         Impact_Mean = round(mean(comp_impact), 2),
         Impact_P5   = round(quantile(comp_impact, 0.05), 2),
@@ -368,6 +374,7 @@ compute_summary <- function(df, draw_store = NULL) {
     } else {
       # ── Fallback: simple unweighted mean of summary stats ──────────────────
       out_list[[ci]] <- data.frame(
+        Biodiversity_Type = comp_type,
         Component   = comp,
         Impact_Mean = round(mean(rows$Impact_Mean), 2),
         Impact_P5   = round(mean(rows$Impact_P5),   2),
