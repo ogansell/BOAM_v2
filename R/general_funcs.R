@@ -337,7 +337,19 @@ xlsx_impact_columns <- function() {
     "mx_post_impact_mean"      = "Mean Attribute Measure Post Impact",
     "mx_post_impact_sd"        = "NORMAL: SD Post Impact",
     "impact_sample_size_post"  = "POISSON: Sample Size Post Impact",
-    "mx_post_impact_var"       = "NEG BINOMIAL: Variance Post Impact"
+    "mx_post_impact_var"       = "NEG BINOMIAL: Variance Post Impact",
+
+    # --- SHELF (Expert elicited) — Prior Impact ---
+    "prior_impact_p_low"       = "EXPERT ELICITED: Lower Bound (P5/P25) Prior to Impact",
+    "prior_impact_p50"         = "EXPERT ELICITED: Median (P50) Prior to Impact",
+    "prior_impact_p_high"      = "EXPERT ELICITED: Upper Bound (P95/P75) Prior to Impact",
+    "prior_impact_ci_level"    = "EXPERT ELICITED: CI Level Prior to Impact",
+
+    # --- SHELF (Expert elicited) — Post Impact ---
+    "post_impact_p_low"        = "EXPERT ELICITED: Lower Bound (P5/P25) Post Impact",
+    "post_impact_p50"          = "EXPERT ELICITED: Median (P50) Post Impact",
+    "post_impact_p_high"       = "EXPERT ELICITED: Upper Bound (P95/P75) Post Impact",
+    "post_impact_ci_level"     = "EXPERT ELICITED: CI Level Post Impact"
   )
 }
 
@@ -361,7 +373,19 @@ xlsx_offset_columns <- function() {
     "mx_post_offset_var"       = "NEG BINOMIAL: Variance Post Offset",
     "selected_confidence"      = "Confidence in Proposed Offset Action",
     "time_till_end"            = "Time till End (Years)",
-    "discount_rate"            = "Discount Rate (%)"
+    "discount_rate"            = "Discount Rate (%)",
+
+    # --- SHELF (Expert elicited) — Prior Offset ---
+    "prior_offset_p_low"       = "EXPERT ELICITED: Lower Bound (P5/P25) Prior to Offset",
+    "prior_offset_p50"         = "EXPERT ELICITED: Median (P50) Prior to Offset",
+    "prior_offset_p_high"      = "EXPERT ELICITED: Upper Bound (P95/P75) Prior to Offset",
+    "prior_offset_ci_level"    = "EXPERT ELICITED: CI Level Prior to Offset",
+
+    # --- SHELF (Expert elicited) — Post Offset ---
+    "post_offset_p_low"        = "EXPERT ELICITED: Lower Bound (P5/P25) Post Offset",
+    "post_offset_p50"          = "EXPERT ELICITED: Median (P50) Post Offset",
+    "post_offset_p_high"       = "EXPERT ELICITED: Upper Bound (P95/P75) Post Offset",
+    "post_offset_ci_level"     = "EXPERT ELICITED: CI Level Post Offset"
   )
 }
 
@@ -406,14 +430,29 @@ rename_to_ids <- function(df, col_map) {
   label_to_id <- setNames(names(col_map), unname(col_map))
   incoming <- colnames(df)
   for (j in seq_along(incoming)) {
-    # read.xlsx(sep.names = " ") leaves XML entities (e.g. "&amp;") undecoded
+    # read.xlsx(sep.names = " ") leaves XML/HTML entities undecoded (e.g.
+    # "&amp;", or "&#8211;" for the en dash used in labels like
+    # "Prior Impact – Attribute Measure Data Type")
     nm <- gsub("&amp;", "&", incoming[j], fixed = TRUE)
+    nm <- gsub("&#8211;", "–", nm, fixed = TRUE)
     if (nm %in% names(label_to_id)) {
       incoming[j] <- label_to_id[[nm]]
     }
   }
   colnames(df) <- incoming
   df
+}
+
+# ── Drop template padding rows ────────────────────────────────────────────
+# Excel templates ship with data-validation dropdowns pre-applied across a
+# large row range (e.g. 100 rows) for user convenience, so read.xlsx() often
+# returns dozens of fully-blank rows below the real data. A row with all
+# three join-key fields blank is padding, not a data-entry mistake to flag —
+# a genuine (if malformed) row would have at least one of them filled in.
+drop_blank_key_rows <- function(df) {
+  blank <- function(x) is.na(x) | trimws(as.character(x)) == ""
+  keep <- !(blank(df$biodiversity_type) & blank(df$biodiversity_component) & blank(df$biodiversity_attribute))
+  df[keep, , drop = FALSE]
 }
 
 # Join key columns used across all sheets
@@ -495,6 +534,7 @@ validate_xlsx_upload <- function(filepath) {
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   bio_df <- rename_to_ids(bio_df, xlsx_biodiversity_columns())
+  bio_df <- drop_blank_key_rows(bio_df)
 
   # --- Read Impact Site ---
   impact_df <- tryCatch(read.xlsx(filepath, sheet = "Impact Site", colNames = TRUE, sep.names = " "),
@@ -508,6 +548,7 @@ validate_xlsx_upload <- function(filepath) {
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   impact_df <- rename_to_ids(impact_df, xlsx_impact_columns())
+  impact_df <- drop_blank_key_rows(impact_df)
 
   # --- Join Biodiversity fields (distribution, measurement_unit, benchmark_value) onto Impact rows ---
   bio_data <- bio_df[, setdiff(colnames(bio_df), join_keys), drop = FALSE]
@@ -530,12 +571,14 @@ validate_xlsx_upload <- function(filepath) {
     return(list(valid = FALSE, errors = errors, project = project, attributes = data.frame()))
   }
   offset_df <- rename_to_ids(offset_df, xlsx_offset_columns())
+  offset_df <- drop_blank_key_rows(offset_df)
 
   # --- Read Documentation sheets (optional) ---
   doc_attr_df <- tryCatch(read.xlsx(filepath, sheet = "Documentation -AttributeMeasure", colNames = TRUE, sep.names = " "),
                            error = function(e) NULL)
   if (!is.null(doc_attr_df) && nrow(doc_attr_df) > 0) {
     doc_attr_df <- rename_to_ids(doc_attr_df, xlsx_doc_attr_columns())
+    doc_attr_df <- drop_blank_key_rows(doc_attr_df)
   } else {
     doc_attr_df <- NULL
   }
@@ -544,6 +587,7 @@ validate_xlsx_upload <- function(filepath) {
                             error = function(e) NULL)
   if (!is.null(doc_other_df) && nrow(doc_other_df) > 0) {
     doc_other_df <- rename_to_ids(doc_other_df, xlsx_doc_other_columns())
+    doc_other_df <- drop_blank_key_rows(doc_other_df)
   } else {
     doc_other_df <- NULL
   }
@@ -579,28 +623,41 @@ validate_xlsx_upload <- function(filepath) {
       add_err(i, "Impact", "distribution", paste0("Invalid distribution: '", dist, "'"))
     }
 
-    # Reject Expert elicited
-    for (dt_fld in c("prior_impact_data_type", "post_impact_data_type")) {
-      dt_val <- as.character(row[[dt_fld]])
-      if (!is.na(dt_val) && dt_val == "Expert elicited") {
-        add_err(i, "Impact", dt_fld,
-                "Expert elicited data type is not supported via spreadsheet. Use the app GUI.")
-      }
-    }
-
     # Measurement point validation (prior + post impact)
     point_configs <- list(
       list(dt = "prior_impact_data_type", mean = "mx_prior_impact_mean",
            sd = "mx_prior_impact_sd", n = "impact_sample_size_prior",
-           var = "mx_prior_impact_var"),
+           var = "mx_prior_impact_var",
+           p_low = "prior_impact_p_low", p50 = "prior_impact_p50",
+           p_high = "prior_impact_p_high", ci_level = "prior_impact_ci_level"),
       list(dt = "post_impact_data_type", mean = "mx_post_impact_mean",
            sd = "mx_post_impact_sd", n = "impact_sample_size_post",
-           var = "mx_post_impact_var")
+           var = "mx_post_impact_var",
+           p_low = "post_impact_p_low", p50 = "post_impact_p50",
+           p_high = "post_impact_p_high", ci_level = "post_impact_ci_level")
     )
 
     for (pc in point_configs) {
       data_type <- as.character(row[[pc$dt]])
-      if (!is.na(data_type) && data_type == "Expert elicited") next
+
+      if (!is.na(data_type) && data_type == "Expert elicited") {
+        # Require the three SHELF percentiles + CI level for this measurement point
+        for (shelf_fld in c(pc$p_low, pc$p50, pc$p_high, pc$ci_level)) {
+          val <- row[[shelf_fld]]
+          if (is.null(val) || is.na(val) || is.na(suppressWarnings(as.numeric(val)))) {
+            add_err(i, "Impact", shelf_fld,
+                    paste0("'", shelf_fld, "' is required when Data Type is 'Expert elicited'"))
+          }
+        }
+        # p_high must exceed p_low (sanity check — SD would otherwise be negative/garbage)
+        lo <- suppressWarnings(as.numeric(row[[pc$p_low]]))
+        hi <- suppressWarnings(as.numeric(row[[pc$p_high]]))
+        if (!is.na(lo) && !is.na(hi) && hi <= lo) {
+          add_err(i, "Impact", pc$p_high,
+                  paste0("'", pc$p_high, "' must be greater than '", pc$p_low, "'"))
+        }
+        next  # skip the mean/SD/etc checks below — not applicable for SHELF rows
+      }
 
       # Mean required
       mean_val <- row[[pc$mean]]
@@ -654,15 +711,6 @@ validate_xlsx_upload <- function(filepath) {
       }
     }
 
-    # Reject Expert elicited
-    for (dt_fld in c("prior_offset_data_type", "post_offset_data_type")) {
-      dt_val <- as.character(row[[dt_fld]])
-      if (!is.na(dt_val) && dt_val == "Expert elicited") {
-        add_err(i, "Offset", dt_fld,
-                "Expert elicited data type is not supported via spreadsheet. Use the app GUI.")
-      }
-    }
-
     # Need the distribution from the matching impact row to validate secondary params
     imp_key <- paste(row$biodiversity_type, row$biodiversity_component,
                       row$biodiversity_attribute, sep = "|||")
@@ -673,15 +721,37 @@ validate_xlsx_upload <- function(filepath) {
     point_configs <- list(
       list(dt = "prior_offset_data_type", mean = "mx_prior_offset_mean",
            sd = "mx_prior_offset_sd", n = "offset_sample_size_prior",
-           var = "mx_prior_offset_var"),
+           var = "mx_prior_offset_var",
+           p_low = "prior_offset_p_low", p50 = "prior_offset_p50",
+           p_high = "prior_offset_p_high", ci_level = "prior_offset_ci_level"),
       list(dt = "post_offset_data_type", mean = "mx_post_offset_mean",
            sd = "mx_post_offset_sd", n = "offset_sample_size_post",
-           var = "mx_post_offset_var")
+           var = "mx_post_offset_var",
+           p_low = "post_offset_p_low", p50 = "post_offset_p50",
+           p_high = "post_offset_p_high", ci_level = "post_offset_ci_level")
     )
 
     for (pc in point_configs) {
       data_type <- as.character(row[[pc$dt]])
-      if (!is.na(data_type) && data_type == "Expert elicited") next
+
+      if (!is.na(data_type) && data_type == "Expert elicited") {
+        # Require the three SHELF percentiles + CI level for this measurement point
+        for (shelf_fld in c(pc$p_low, pc$p50, pc$p_high, pc$ci_level)) {
+          val <- row[[shelf_fld]]
+          if (is.null(val) || is.na(val) || is.na(suppressWarnings(as.numeric(val)))) {
+            add_err(i, "Offset", shelf_fld,
+                    paste0("'", shelf_fld, "' is required when Data Type is 'Expert elicited'"))
+          }
+        }
+        # p_high must exceed p_low (sanity check — SD would otherwise be negative/garbage)
+        lo <- suppressWarnings(as.numeric(row[[pc$p_low]]))
+        hi <- suppressWarnings(as.numeric(row[[pc$p_high]]))
+        if (!is.na(lo) && !is.na(hi) && hi <= lo) {
+          add_err(i, "Offset", pc$p_high,
+                  paste0("'", pc$p_high, "' must be greater than '", pc$p_low, "'"))
+        }
+        next  # skip the mean/SD/etc checks below — not applicable for SHELF rows
+      }
 
       mean_val <- row[[pc$mean]]
       if (is.null(mean_val) || is.na(mean_val) ||

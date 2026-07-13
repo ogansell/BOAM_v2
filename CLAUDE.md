@@ -159,7 +159,7 @@ input$save_and_reset
 - Expected sheets: `Project Details`, `Impact Attributes`, `Offset Attributes`, `Documentation` (optional), `Instructions` (reference only)
 - Column label ↔ internal ID maps: `xlsx_impact_columns()`, `xlsx_offset_columns()`, `xlsx_doc_columns()`; `rename_to_ids()` applies them
 - Join key across Impact/Offset/Documentation sheets: `biodiversity_type` + `biodiversity_component` + `biodiversity_attribute` (see `join_keys`)
-- Expert-elicited (SHELF) data type is **not supported** via spreadsheet — rejected during validation
+- Expert-elicited (SHELF) data type **is supported** via spreadsheet upload — the four measurement-point columns (Impact/Offset × Prior/Post) each have `EXPERT ELICITED: Lower Bound / Median / Upper Bound / CI Level` columns on the Impact Site / Offset Site sheets; when `*_data_type == "Expert elicited"`, these are required in place of the mean/SD/Poisson/NegBinomial columns (validated in `validate_xlsx_upload()`'s `point_configs` loop)
 - **Process:** `process_xlsx_upload()` (`general_funcs.R`) re-simulates every row via `resimulate_row()`, replaces `saved_results()`/`draw_store`/`summary_results()` entirely, and restores Project Details inputs
 - **NA vs NULL gotcha:** blank cells from `read.xlsx()` come back as `NA` (e.g. `NA_character_`), not `NULL`. Guards like `if (!is.null(x) && ...)` are insufficient — also need `!is.na(x)` before any numeric/length check (`nchar()`, `>`, etc.), since `TRUE && NA` throws `"missing value where TRUE/FALSE needed"`
 
