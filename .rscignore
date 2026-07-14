@@ -1,8 +1,15 @@
 # Local/dev-only files — not needed by the deployed app.
-.claude/
-.git/
+#
+# rsconnect's .rscignore only matches literal top-level entry names within
+# the directory that contains it (no globs, no trailing slashes, no nested
+# paths — see rsconnect:::ignoreBundleFiles / recursiveBundleFiles). A
+# directory must be listed WITHOUT a trailing slash to be excluded, and a
+# nested file needs its own .rscignore inside that subdirectory (see
+# R/.rscignore and www/.rscignore) — "R/Global.R" here does nothing.
+.claude
+.git
 .gitignore
-.Rproj.user/
+.Rproj.user
 .RData
 .Rhistory
 .Ruserdata
@@ -12,8 +19,6 @@ CLAUDE.md
 
 # Confirmed-unused leftover files (not sourced/referenced anywhere in the app).
 report1.Rmd
-R/Global.R
-www/app_working_load_button.R
 
 # Dev/test example workbooks — not referenced by the app (the actual
 # downloadable template lives in www/ and is bundled normally).
